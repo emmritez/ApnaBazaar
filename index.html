@@ -75,10 +75,27 @@
       getDownloadURL 
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
+    /* =========================================================================
+       🔥 LIVE INTERNET SYNC CONFIGURATION (हर मोबाइल/कंप्यूटर पर दिखने के लिए)
+       Firebase Console से अपनी कॉन्फिग यहाँ पेस्ट करें:
+       ========================================================================= */
+    const customFirebaseConfig = {
+      apiKey: "AIzaSyBYn8QZ0zaLnq8WvFpkpghhCizlOv8ZD2g",
+      authDomain: "apnabazaar-in.firebaseapp.com",
+      projectId: "apnabazaar-in",
+      storageBucket: "apnabazaar-in.firebasestorage.app",
+      messagingSenderId: "587588217089",
+      appId: "1:587588217089:web:673dacf7f4707d7a64d300",
+      measurementId: "G-S3XXK0EYZQ"
+    };
+
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'apnabazaar-up';
     let firebaseConfig = null;
     
-    if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+    // Check if user set custom keys or platform injected them
+    if (customFirebaseConfig.apiKey && customFirebaseConfig.apiKey !== "YOUR_API_KEY") {
+      firebaseConfig = customFirebaseConfig;
+    } else if (typeof __firebase_config !== 'undefined' && __firebase_config) {
       try {
         firebaseConfig = JSON.parse(__firebase_config);
       } catch (err) {
