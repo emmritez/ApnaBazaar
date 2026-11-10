@@ -459,41 +459,41 @@
   <!-- ================= MOBILE APP-STYLE BOTTOM NAVIGATION (Phones Only) ================= -->
   <nav class="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-bottom">
     <!-- Home / Explore -->
-    <button onclick="resetFilters(); window.scrollTo({top:0, behavior:'smooth'})" class="flex flex-col items-center justify-center text-olxBlue py-1 px-2">
+    <button onclick="resetFilters(); window.scrollTo({top:0, behavior:'smooth'})" class="flex flex-col items-center justify-center text-olxBlue py-1 px-2 cursor-pointer">
       <i class="fa-solid fa-house text-base"></i>
       <span class="text-[10px] font-bold mt-0.5">Home</span>
     </button>
 
     <!-- My Chats -->
-    <button onclick="openChatListModal()" class="flex flex-col items-center justify-center text-gray-600 hover:text-olxBlue py-1 px-2 relative">
+    <button onclick="openChatListModal()" class="flex flex-col items-center justify-center text-gray-600 hover:text-olxBlue py-1 px-2 relative cursor-pointer">
       <i class="fa-regular fa-comment-dots text-base"></i>
       <span class="text-[10px] font-semibold mt-0.5">Chats</span>
-      <span id="mobileUnreadBadge" class="absolute top-0 right-1 bg-red-500 text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">1</span>
+      <span id="mobileUnreadBadge" class="hidden absolute top-0 right-1 bg-red-500 text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">1</span>
     </button>
 
     <!-- SELL Button (Floating Center Action) -->
-    <button onclick="openPostAdModal()" class="flex flex-col items-center justify-center -mt-5 bg-olxYellow border-4 border-olxTeal w-13 h-13 rounded-full shadow-lg active:scale-95 transition-transform">
+    <button onclick="openPostAdModal()" class="flex flex-col items-center justify-center -mt-5 bg-olxYellow border-4 border-olxTeal w-13 h-13 rounded-full shadow-lg active:scale-95 transition-transform cursor-pointer">
       <i class="fa-solid fa-plus text-olxBlue text-lg font-black"></i>
       <span class="text-[9px] font-black uppercase text-olxBlue">Sell</span>
     </button>
 
     <!-- Admin Portal -->
-    <button onclick="openAdminModal()" class="flex flex-col items-center justify-center text-gray-600 hover:text-olxBlue py-1 px-2">
+    <button onclick="openAdminModal()" class="flex flex-col items-center justify-center text-gray-600 hover:text-olxBlue py-1 px-2 cursor-pointer">
       <i class="fa-solid fa-shield-halved text-base text-amber-600"></i>
       <span class="text-[10px] font-semibold mt-0.5">Admin</span>
     </button>
 
     <!-- Language Switcher -->
-    <button onclick="toggleLanguage()" class="flex flex-col items-center justify-center text-gray-600 hover:text-olxBlue py-1 px-2">
+    <button onclick="toggleLanguage()" class="flex flex-col items-center justify-center text-gray-600 hover:text-olxBlue py-1 px-2 cursor-pointer">
       <i class="fa-solid fa-language text-base text-olxTeal"></i>
       <span class="text-[10px] font-semibold mt-0.5" id="mobileLangLabel">EN/HI</span>
     </button>
   </nav>
 
   <!-- ================= ADMIN LOGIN & MANAGEMENT MODAL ================= -->
-  <div id="adminModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative p-5 sm:p-7">
-      <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+  <div id="adminModal" style="display: none;" class="fixed inset-0 bg-black/60 z-50 items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative p-5 sm:p-7 my-auto">
+      <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
         <i class="fa-solid fa-xmark text-xl"></i>
       </button>
 
@@ -520,12 +520,12 @@
           </div>
 
           <div class="flex items-center justify-between text-xs pt-1">
-            <button type="button" onclick="showAdminResetView()" class="text-olxTeal hover:underline font-semibold" data-i18n="forgot_password">
+            <button type="button" onclick="showAdminResetView()" class="text-olxTeal hover:underline font-semibold cursor-pointer" data-i18n="forgot_password">
               Forgot / Change Password?
             </button>
           </div>
 
-          <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl transition shadow active:scale-98" data-i18n="admin_submit">
+          <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl transition shadow active:scale-98 cursor-pointer" data-i18n="admin_submit">
             लॉगिन करें (Verify & Login)
           </button>
         </form>
@@ -534,7 +534,7 @@
       <!-- Admin Reset Password View -->
       <div id="adminResetView" class="hidden">
         <div class="flex items-center gap-3 mb-4">
-          <button type="button" onclick="showAdminLoginView()" class="text-gray-500 hover:text-gray-900">
+          <button type="button" onclick="showAdminLoginView()" class="text-gray-500 hover:text-gray-900 cursor-pointer">
             <i class="fa-solid fa-arrow-left text-lg"></i>
           </button>
           <div>
@@ -552,7 +552,7 @@
             <label class="block text-xs font-bold text-gray-700 uppercase mb-1" data-i18n="new_pass_label">New Password *</label>
             <input type="password" id="newPasswordInput" minlength="6" required placeholder="Enter new secure password" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-olxTeal outline-none font-mono">
           </div>
-          <button type="submit" class="w-full bg-olxTeal hover:bg-[#008f8a] text-white font-bold py-2.5 rounded-xl transition shadow" data-i18n="save_new_pass">
+          <button type="submit" class="w-full bg-olxTeal hover:bg-[#008f8a] text-white font-bold py-2.5 rounded-xl transition shadow cursor-pointer" data-i18n="save_new_pass">
             पासवर्ड अपडेट करें (Save New Password)
           </button>
         </form>
@@ -566,10 +566,10 @@
             <p class="text-xs text-gray-500">ApnaBazaar UP Moderation & Management</p>
           </div>
           <div class="flex items-center gap-2">
-            <button onclick="showAdminResetView()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-2.5 py-1.5 rounded-lg border" data-i18n="change_pass_btn">
+            <button onclick="showAdminResetView()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-2.5 py-1.5 rounded-lg border cursor-pointer" data-i18n="change_pass_btn">
               <i class="fa-solid fa-key mr-1"></i> Change Pass
             </button>
-            <button onclick="handleAdminLogout()" class="text-xs bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold px-3 py-1.5 rounded-lg border border-rose-200" data-i18n="logout_btn">
+            <button onclick="handleAdminLogout()" class="text-xs bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold px-3 py-1.5 rounded-lg border border-rose-200 cursor-pointer" data-i18n="logout_btn">
               <i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Logout
             </button>
           </div>
@@ -595,7 +595,7 @@
         <div>
           <div class="flex items-center justify-between mb-2">
             <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider" data-i18n="all_listings_mod">All Listings (Moderation & Delete)</h3>
-            <button onclick="confirmClearAllData()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold underline">
+            <button onclick="confirmClearAllData()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold underline cursor-pointer">
               <i class="fa-solid fa-trash-can mr-1"></i> Clear All Data
             </button>
           </div>
@@ -621,9 +621,9 @@
   </div>
 
   <!-- ================= POST AD MODAL ================= -->
-  <div id="postAdModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative p-5 sm:p-7">
-      <button onclick="closePostAdModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+  <div id="postAdModal" style="display: none;" class="fixed inset-0 bg-black/60 z-50 items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative p-5 sm:p-7 my-auto">
+      <button onclick="closePostAdModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 cursor-pointer">
         <i class="fa-solid fa-xmark text-xl"></i>
       </button>
 
@@ -732,7 +732,7 @@
         </div>
 
         <!-- Submit Button -->
-        <button id="postSubmitBtn" type="submit" class="w-full bg-olxBlue hover:bg-[#00383e] text-white font-bold py-3 rounded-xl transition shadow active:scale-98">
+        <button id="postSubmitBtn" type="submit" class="w-full bg-olxBlue hover:bg-[#00383e] text-white font-bold py-3 rounded-xl transition shadow active:scale-98 cursor-pointer">
           विज्ञापन पोस्ट करें (Post Now)
         </button>
       </form>
@@ -740,9 +740,9 @@
   </div>
 
   <!-- ================= PRODUCT VIEW MODAL ================= -->
-  <div id="productModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative">
-      <button onclick="closeProductModal()" class="absolute top-3 right-3 z-10 w-9 h-9 bg-black/50 hover:bg-black/75 text-white rounded-full flex items-center justify-center transition">
+  <div id="productModal" style="display: none;" class="fixed inset-0 bg-black/60 z-50 items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative my-auto">
+      <button onclick="closeProductModal()" class="absolute top-3 right-3 z-10 w-9 h-9 bg-black/50 hover:bg-black/75 text-white rounded-full flex items-center justify-center transition cursor-pointer">
         <i class="fa-solid fa-xmark text-lg"></i>
       </button>
 
@@ -788,13 +788,13 @@
 
             <!-- Contact Number Block -->
             <div id="contactDetailsContainer" class="mb-3">
-              <!-- Rendered via JS based on hideContact toggle -->
+              <!-- Rendered via JS -->
             </div>
 
             <!-- Chat Button -->
             <button 
               id="modalChatBtn"
-              class="w-full bg-olxBlue hover:bg-[#003e45] text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition active:scale-98 shadow">
+              class="w-full bg-olxBlue hover:bg-[#003e45] text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition active:scale-98 shadow cursor-pointer">
               <i class="fa-solid fa-comments text-olxYellow text-lg"></i>
               <span>Chat with Seller (डील फाइनल करें)</span>
             </button>
@@ -805,8 +805,8 @@
   </div>
 
   <!-- ================= INTER-PERSONAL LIVE CHAT MODAL ================= -->
-  <div id="chatModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-2 sm:p-4 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl max-w-lg w-full h-[600px] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
+  <div id="chatModal" style="display: none;" class="fixed inset-0 bg-black/60 z-50 items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full h-[600px] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden my-auto">
       
       <!-- Chat Header -->
       <div class="bg-olxBlue text-white p-3 sm:p-4 flex items-center justify-between shadow-md">
@@ -826,7 +826,7 @@
           </div>
         </div>
 
-        <button onclick="closeChatModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+        <button onclick="closeChatModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition cursor-pointer">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -845,10 +845,10 @@
 
       <!-- Deal Chips -->
       <div class="bg-white px-3 py-1.5 border-b border-gray-100 flex items-center gap-1.5 overflow-x-auto text-[11px] whitespace-nowrap">
-        <button onclick="sendQuickMessage('क्या यह सामान अभी उपलब्ध है?')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full border border-gray-300">उपलब्ध है?</button>
-        <button onclick="sendQuickMessage('Final Price क्या होगी भाई?')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full border border-gray-300">Final Price क्या होगी?</button>
-        <button onclick="sendQuickMessage('क्या पूरे UP में डिलीवरी मिल जाएगी?')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full border border-gray-300">UP डिलीवरी?</button>
-        <button onclick="sendQuickMessage('Deal Done! कृपया पता और समय बताएं।')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1 rounded-full border border-amber-300 font-semibold">Deal Done!</button>
+        <button onclick="sendQuickMessage('क्या यह सामान अभी उपलब्ध है?')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full border border-gray-300 cursor-pointer">उपलब्ध है?</button>
+        <button onclick="sendQuickMessage('Final Price क्या होगी भाई?')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full border border-gray-300 cursor-pointer">Final Price क्या होगी?</button>
+        <button onclick="sendQuickMessage('क्या पूरे UP में डिलीवरी मिल जाएगी?')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full border border-gray-300 cursor-pointer">UP डिलीवरी?</button>
+        <button onclick="sendQuickMessage('Deal Done! कृपया पता और समय बताएं।')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1 rounded-full border border-amber-300 font-semibold cursor-pointer">Deal Done!</button>
       </div>
 
       <!-- Messages Flow Area -->
@@ -865,7 +865,7 @@
           placeholder="Type message or offer your price (₹)..." 
           class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-xs sm:text-sm outline-none focus:border-olxTeal focus:ring-1 focus:ring-olxTeal bg-gray-50"
         />
-        <button onclick="handleSendMessage()" class="bg-olxTeal hover:bg-[#008f8a] text-white w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition shadow active:scale-95" title="Send">
+        <button onclick="handleSendMessage()" class="bg-olxTeal hover:bg-[#008f8a] text-white w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition shadow active:scale-95 cursor-pointer" title="Send">
           <i class="fa-solid fa-paper-plane text-xs sm:text-sm"></i>
         </button>
       </div>
@@ -873,11 +873,11 @@
   </div>
 
   <!-- ================= INBOX / CHAT LIST MODAL ================= -->
-  <div id="chatListModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden p-4">
+  <div id="chatListModal" style="display: none;" class="fixed inset-0 bg-black/60 z-50 items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden p-4 my-auto">
       <div class="flex items-center justify-between pb-3 border-b border-gray-200">
         <h3 class="font-bold text-base text-olxBlue">मेरे संदेश (My Chats)</h3>
-        <button onclick="closeChatListModal()" class="text-gray-400 hover:text-gray-700 w-8 h-8 rounded-full flex items-center justify-center">
+        <button onclick="closeChatListModal()" class="text-gray-400 hover:text-gray-700 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer">
           <i class="fa-solid fa-xmark text-lg"></i>
         </button>
       </div>
@@ -887,122 +887,20 @@
     </div>
   </div>
 
-  <!-- ================= ADMIN LOGIN MODAL ================= -->
-  <div id="adminLoginModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
-      <button onclick="closeAdminLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-      <div class="text-center mb-5">
-        <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-2 text-xl font-bold">
-          <i class="fa-solid fa-user-shield"></i>
-        </div>
-        <h3 class="text-lg font-black text-olxBlue">Admin Verification</h3>
-        <p class="text-xs text-gray-500 mt-0.5">ApnaBazaar UP नियंत्रण केंद्र</p>
-      </div>
-      <form onsubmit="handleAdminLogin(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1">Admin Security PIN</label>
-          <input type="password" id="adminPinInput" required placeholder="Enter PIN (Default: 9999)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-olxTeal focus:ring-1 focus:ring-olxTeal text-center tracking-widest font-mono text-base" />
-          <p class="text-[11px] text-gray-400 mt-1 text-center">Testing Hint: PIN है <strong class="text-gray-700">9999</strong></p>
-        </div>
-        <button type="submit" class="w-full bg-olxBlue hover:bg-[#003c42] text-white font-bold py-2.5 rounded-xl text-sm transition">
-          प्रवेश करें (Login)
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- ================= ADMIN MANAGEMENT DASHBOARD MODAL ================= -->
-  <div id="adminDashboardModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-5 backdrop-blur-xs overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
-      <!-- Admin Bar Header -->
-      <div class="bg-olxBlue text-white p-4 flex items-center justify-between border-b border-gray-700">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 bg-amber-400 text-olxBlue rounded-lg flex items-center justify-center font-bold">
-            <i class="fa-solid fa-screwdriver-wrench"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-sm sm:text-base leading-tight">ApnaBazaar Admin Center</h3>
-            <p class="text-[11px] text-teal-200">विज्ञापन समीक्षा, फेक ऐड रिमूवल और डेटा नियंत्रण</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <button onclick="handleAdminLogout()" class="text-xs bg-rose-600/80 hover:bg-rose-600 text-white font-semibold px-3 py-1.5 rounded-lg transition">
-            Logout
-          </button>
-          <button onclick="closeAdminDashboardModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- Quick KPI Stats Cards -->
-      <div class="p-4 bg-gray-50 border-b border-gray-200 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-xs">
-          <span class="block text-xl font-black text-olxBlue" id="adminTotalAds">0</span>
-          <span class="text-[11px] text-gray-500 font-semibold uppercase">Total Ads</span>
-        </div>
-        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-xs">
-          <span class="block text-xl font-black text-emerald-600" id="adminVerifiedAds">0</span>
-          <span class="text-[11px] text-gray-500 font-semibold uppercase">Verified Ads</span>
-        </div>
-        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-xs">
-          <span class="block text-xl font-black text-amber-600" id="adminActiveDistricts">0</span>
-          <span class="text-[11px] text-gray-500 font-semibold uppercase">Active Districts</span>
-        </div>
-        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-xs flex flex-col justify-center">
-          <button onclick="confirmClearAllData()" class="text-xs text-rose-600 hover:text-white hover:bg-rose-600 border border-rose-200 py-1.5 px-2 rounded-lg font-bold transition">
-            <i class="fa-solid fa-trash-can mr-1"></i> Clear All Data
-          </button>
-        </div>
-      </div>
-
-      <!-- Ads Table Container -->
-      <div class="flex-1 overflow-y-auto p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h4 class="font-bold text-sm text-gray-800">लाइव विज्ञापनों की सूची (Manage Listings)</h4>
-          <span class="text-xs text-gray-500">फेक विज्ञापन तुरंत हटाएं</span>
-        </div>
-
-        <div class="overflow-x-auto border border-gray-200 rounded-xl">
-          <table class="w-full text-left text-xs">
-            <thead class="bg-gray-100 text-gray-600 uppercase text-[10px] tracking-wider border-b border-gray-200">
-              <tr>
-                <th class="p-3">Ad Photo & Title</th>
-                <th class="p-3">Price</th>
-                <th class="p-3">Location</th>
-                <th class="p-3">Seller Details</th>
-                <th class="p-3 text-center">Status</th>
-                <th class="p-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="adminAdsTableBody" class="divide-y divide-gray-100 bg-white">
-              <!-- Rendered via JS -->
-            </tbody>
-          </table>
-        </div>
-        <div id="adminEmptyMsg" class="hidden text-center py-8 text-gray-400 text-xs">कोई भी विज्ञापन उपलब्ध नहीं है।</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= TOAST NOTIFICATION CONTAINER (FIXED & HARDENED) ================= -->
+  <!-- ================= TOAST NOTIFICATION CONTAINER ================= -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 max-w-sm bg-gray-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-24 opacity-0 pointer-events-none">
     <div id="toastIconContainer" class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
       <i id="toastIcon" class="fa-solid fa-check text-sm"></i>
     </div>
-    <div class="flex-1 text-xs sm:text-sm font-medium leading-snug" id="toastMsg">
-      <!-- Message injected here -->
-    </div>
-    <button onclick="hideToast()" class="text-gray-400 hover:text-white text-xs ml-1">
+    <div class="flex-1 text-xs sm:text-sm font-medium leading-snug" id="toastMsg"></div>
+    <button onclick="hideToast()" class="text-gray-400 hover:text-white text-xs ml-1 cursor-pointer">
       <i class="fa-solid fa-xmark"></i>
     </button>
   </div>
 
   <!-- ================= MAIN SCRIPT ================= -->
   <script>
-    // Empty state by default (no hardcoded/dummy products)
+    // State variables
     let products = [];
     let selectedCategory = 'All';
     let currentViewingProduct = null;
@@ -1086,13 +984,15 @@
       localStorage.setItem('apnabazaar_lang', lang);
       const dict = translations[lang] || translations.hi;
 
-      // Update lang toggle button label
       const langLabel = document.getElementById('langLabel');
       if (langLabel) {
         langLabel.textContent = lang === 'hi' ? 'English' : 'हिंदी';
       }
+      const mobileLang = document.getElementById('mobileLangLabel');
+      if (mobileLang) {
+        mobileLang.textContent = lang === 'hi' ? 'ENG' : 'HIN';
+      }
 
-      // Update text in elements with data-i18n
       document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
         if (dict[key]) {
@@ -1104,6 +1004,7 @@
     function toggleLanguage() {
       const nextLang = currentLang === 'hi' ? 'en' : 'hi';
       applyLanguage(nextLang);
+      renderProducts();
       showToast(nextLang === 'hi' ? "भाषा बदलकर हिंदी कर दी गई!" : "Language switched to English!");
     }
 
@@ -1119,16 +1020,14 @@
       return ABUSIVE_PATTERNS.some(regex => regex.test(text));
     }
 
-    // Safe, Crash-Proof Toast Function
+    // Safe Toast
     function showToast(msg, type = "success") {
       try {
         const toast = document.getElementById('toast');
-        const toastMsg = document.getElementById('toastMsg') || document.getElementById('toastMessage');
+        const toastMsg = document.getElementById('toastMsg');
         const toastIcon = document.getElementById('toastIcon');
 
-        if (toastMsg) {
-          toastMsg.textContent = msg;
-        }
+        if (toastMsg) toastMsg.textContent = msg;
 
         if (toastIcon) {
           if (type === "error") {
@@ -1145,10 +1044,10 @@
             hideToast();
           }, 3200);
         } else {
-          console.log("[Notification]:", msg);
+          console.log("[Notice]:", msg);
         }
       } catch (err) {
-        console.warn("showToast fallback error caught gracefully:", err);
+        console.warn("showToast fallback:", err);
       }
     }
 
@@ -1162,8 +1061,9 @@
     // App Initialization
     function initApp() {
       applyLanguage(currentLang);
+      loadFallbackProducts();
 
-      // Start listening to Firebase immediately
+      // Start listening to Firebase
       if (window.ResellFirebase && window.ResellFirebase.isFirebaseReady()) {
         const tag = document.getElementById('backendStatusTag');
         const text = document.getElementById('backendStatusText');
@@ -1172,8 +1072,6 @@
           text.textContent = 'Cloud Connected';
         }
         startFirebaseRealtimeListeners();
-      } else {
-        loadFallbackProducts();
       }
 
       window.addEventListener('firebase-auth-ready', () => {
@@ -1209,29 +1107,19 @@
       renderProducts();
     }
 
-    async function adminDeleteAd(id) {
-      if (window.ResellFirebase && window.ResellFirebase.isFirebaseReady()) {
-        await window.ResellFirebase.deleteAd(id);
-      }
-      products = products.filter(p => p.id !== id);
-      saveLocalProducts();
-      renderProducts();
-      refreshAdminStats();
-      showToast("विज्ञापन सफलतापूर्वक हटा दिया गया।");
-    }
-
     function startFirebaseRealtimeListeners() {
       if (!window.ResellFirebase) return;
       window.ResellFirebase.subscribeAds((cloudAds) => {
         if (cloudAds && cloudAds.length > 0) {
           products = cloudAds;
         } else {
-          products = [];
+          // Keep existing if local has items, or set empty
+          products = products.length > 0 ? products : [];
         }
         saveLocalProducts();
         renderProducts();
       }, (err) => {
-        console.warn("Using offline local data:", err);
+        console.warn("Fallback to local data due to sync notice:", err);
         loadFallbackProducts();
       });
     }
@@ -1250,9 +1138,10 @@
       const filtered = products.filter(p => {
         const matchesCategory = (selectedCategory === 'All' || p.category === selectedCategory);
         const matchesLocation = (locationTerm === 'All' || (p.location && p.location.toLowerCase() === locationTerm.toLowerCase()));
-        const matchesSearch = (p.title.toLowerCase().includes(searchTerm) || 
+        const matchesSearch = (!searchTerm || 
+                               (p.title && p.title.toLowerCase().includes(searchTerm)) || 
                                (p.description && p.description.toLowerCase().includes(searchTerm)) || 
-                               p.category.toLowerCase().includes(searchTerm));
+                               (p.category && p.category.toLowerCase().includes(searchTerm)));
         return matchesCategory && matchesLocation && matchesSearch;
       });
 
@@ -1269,37 +1158,42 @@
       }
 
       if (emptyState) emptyState.classList.add('hidden');
-      grid.innerHTML = filtered.map(p => `
-        <div onclick="openProductModal('${p.id}')" class="bg-white rounded-xl border border-gray-200 hover:border-olxTeal hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden group">
-          <div class="relative bg-gray-100 h-32 sm:h-40 md:h-44 overflow-hidden flex items-center justify-center">
-            <img src="${p.image}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x300/e2e8f0/0f172a?text=ApnaBazaar+Item'">
-            <span class="absolute top-1.5 sm:top-2.5 left-1.5 sm:left-2.5 bg-olxBlue/85 backdrop-blur-xs text-white text-[9px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded shadow truncate max-w-[85%]">
-              <i class="fa-solid fa-tag text-olxYellow mr-1 text-[8px] sm:text-[10px]"></i>${p.category}
-            </span>
-            ${p.isVerified ? '<span class="absolute bottom-1.5 sm:bottom-2.5 left-1.5 sm:left-2.5 bg-emerald-600 text-white text-[8px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded shadow"><i class="fa-solid fa-certificate mr-1"></i>Verified</span>' : ''}
-            <button onclick="event.stopPropagation(); toggleFavorite(this)" class="absolute top-1.5 sm:top-2.5 right-1.5 sm:right-2.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 hover:bg-white text-gray-400 hover:text-red-500 flex items-center justify-center shadow transition-colors">
-              <i class="fa-regular fa-heart text-xs sm:text-sm"></i>
-            </button>
-          </div>
+      grid.innerHTML = filtered.map(p => {
+        const priceFormatted = Number(p.price || 0).toLocaleString('en-IN');
+        const imgSrc = p.image || 'https://placehold.co/400x300/e2e8f0/0f172a?text=ApnaBazaar+Item';
 
-          <div class="p-2.5 sm:p-3.5 flex-1 flex flex-col justify-between">
-            <div>
-              <div class="flex items-baseline justify-between mb-0.5 sm:mb-1">
-                <span class="text-base sm:text-lg md:text-xl font-black text-olxBlue">₹ ${Number(p.price).toLocaleString('en-IN')}</span>
-              </div>
-              <h3 class="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 leading-tight sm:leading-snug mb-1.5 sm:mb-2 group-hover:text-olxTeal transition-colors">${p.title}</h3>
-            </div>
-
-            <div class="border-t border-gray-100 pt-1.5 sm:pt-2 flex items-center justify-between text-[10px] sm:text-[11px] text-gray-500">
-              <span class="truncate flex items-center pr-1">
-                <i class="fa-solid fa-location-dot text-red-500 mr-1 shrink-0"></i>
-                <span class="font-medium text-gray-700 truncate">${p.location || 'UP'}</span>
+        return `
+          <div onclick="openProductModal('${p.id}')" class="bg-white rounded-xl border border-gray-200 hover:border-olxTeal hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden group">
+            <div class="relative bg-gray-100 h-32 sm:h-40 md:h-44 overflow-hidden flex items-center justify-center">
+              <img src="${imgSrc}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x300/e2e8f0/0f172a?text=ApnaBazaar+Item'">
+              <span class="absolute top-1.5 sm:top-2.5 left-1.5 sm:left-2.5 bg-olxBlue/85 backdrop-blur-xs text-white text-[9px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded shadow truncate max-w-[85%]">
+                <i class="fa-solid fa-tag text-olxYellow mr-1 text-[8px] sm:text-[10px]"></i>${p.category || 'Item'}
               </span>
-              <span class="text-gray-400 uppercase tracking-tighter shrink-0">${p.date || 'Active'}</span>
+              ${p.isVerified ? '<span class="absolute bottom-1.5 sm:bottom-2.5 left-1.5 sm:left-2.5 bg-emerald-600 text-white text-[8px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded shadow"><i class="fa-solid fa-certificate mr-1"></i>Verified</span>' : ''}
+              <button onclick="event.stopPropagation(); toggleFavorite(this)" class="absolute top-1.5 sm:top-2.5 right-1.5 sm:right-2.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 hover:bg-white text-gray-400 hover:text-red-500 flex items-center justify-center shadow transition-colors cursor-pointer">
+                <i class="fa-regular fa-heart text-xs sm:text-sm"></i>
+              </button>
+            </div>
+
+            <div class="p-2.5 sm:p-3.5 flex-1 flex flex-col justify-between">
+              <div>
+                <div class="flex items-baseline justify-between mb-0.5 sm:mb-1">
+                  <span class="text-base sm:text-lg md:text-xl font-black text-olxBlue">₹ ${priceFormatted}</span>
+                </div>
+                <h3 class="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 leading-tight sm:leading-snug mb-1.5 sm:mb-2 group-hover:text-olxTeal transition-colors">${p.title || 'Untitled Listing'}</h3>
+              </div>
+
+              <div class="border-t border-gray-100 pt-1.5 sm:pt-2 flex items-center justify-between text-[10px] sm:text-[11px] text-gray-500">
+                <span class="truncate flex items-center pr-1">
+                  <i class="fa-solid fa-location-dot text-red-500 mr-1 shrink-0"></i>
+                  <span class="font-medium text-gray-700 truncate">${p.location || 'UP'}</span>
+                </span>
+                <span class="text-gray-400 uppercase tracking-tighter shrink-0">${p.date || 'Active'}</span>
+              </div>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function filterProducts() {
@@ -1307,7 +1201,8 @@
     }
 
     function syncLocation(val) {
-      document.getElementById('locationFilter').value = val;
+      const desktopLoc = document.getElementById('locationFilter');
+      if (desktopLoc) desktopLoc.value = val;
       filterProducts();
     }
 
@@ -1315,9 +1210,9 @@
       selectedCategory = cat;
       document.querySelectorAll('.cat-pill').forEach(btn => {
         if (btn.dataset.cat === cat) {
-          btn.className = "cat-pill font-bold text-olxBlue bg-gray-100 px-3 py-1 rounded-md shadow-xs border-b-2 border-olxTeal";
+          btn.className = "cat-pill font-bold text-olxBlue bg-gray-100 px-3 py-1 rounded-md shadow-xs border-b-2 border-olxTeal cursor-pointer";
         } else {
-          btn.className = "cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1";
+          btn.className = "cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1 cursor-pointer";
         }
       });
       renderProducts();
@@ -1339,13 +1234,13 @@
       if (!prod) return;
       currentViewingProduct = prod;
 
-      document.getElementById('modalProductImg').src = prod.image;
-      document.getElementById('modalCategoryTag').textContent = prod.category;
-      document.getElementById('modalProductPrice').textContent = `₹ ${Number(prod.price).toLocaleString('en-IN')}`;
-      document.getElementById('modalProductTitle').textContent = prod.title;
+      document.getElementById('modalProductImg').src = prod.image || 'https://placehold.co/400x300';
+      document.getElementById('modalCategoryTag').textContent = prod.category || 'Category';
+      document.getElementById('modalProductPrice').textContent = `₹ ${Number(prod.price || 0).toLocaleString('en-IN')}`;
+      document.getElementById('modalProductTitle').textContent = prod.title || '';
       document.getElementById('modalProductLocation').textContent = `${prod.location || 'All'}, Uttar Pradesh`;
       document.getElementById('modalProductDate').textContent = `Posted: ${prod.date || 'Active'}`;
-      document.getElementById('modalProductDesc').textContent = prod.description;
+      document.getElementById('modalProductDesc').textContent = prod.description || '';
       document.getElementById('modalSellerName').textContent = prod.sellerName || 'Verified Reseller';
       document.getElementById('modalSellerInitial').textContent = prod.sellerName ? prod.sellerName.charAt(0) : 'U';
 
@@ -1368,7 +1263,7 @@
               <i class="fa-solid fa-phone text-emerald-600 mr-2"></i>
               <span id="revealedPhone" class="font-bold tracking-wide">${masked}</span>
             </div>
-            <button onclick="revealPhoneNumber('${rawPhone}')" class="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded font-semibold hover:bg-emerald-700 transition">
+            <button onclick="revealPhoneNumber('${rawPhone}')" class="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded font-semibold hover:bg-emerald-700 transition cursor-pointer">
               Show Number
             </button>
           </div>
@@ -1381,7 +1276,8 @@
         openChatForProduct(prod);
       };
 
-      document.getElementById('productModal').classList.remove('hidden');
+      const pModal = document.getElementById('productModal');
+      pModal.style.display = 'flex';
     }
 
     function revealPhoneNumber(fullNum) {
@@ -1393,16 +1289,19 @@
     }
 
     function closeProductModal() {
-      document.getElementById('productModal').classList.add('hidden');
+      const pModal = document.getElementById('productModal');
+      pModal.style.display = 'none';
     }
 
-    // Post Ad Handling with Abuse Filter
+    // Post Ad Handling
     function openPostAdModal() {
-      document.getElementById('postAdModal').classList.remove('hidden');
+      const modal = document.getElementById('postAdModal');
+      modal.style.display = 'flex';
     }
 
     function closePostAdModal() {
-      document.getElementById('postAdModal').classList.add('hidden');
+      const modal = document.getElementById('postAdModal');
+      modal.style.display = 'none';
     }
 
     function handleImagePreview(event) {
@@ -1497,15 +1396,15 @@
       }
     }
 
-    // Chat Logic with Abuse Filter
+    // Chat Logic
     function openChatForProduct(product) {
       currentChatProduct = product;
 
       document.getElementById('chatSellerTitle').textContent = product.sellerName || 'Reseller';
       document.getElementById('chatUserAvatar').textContent = product.sellerName ? product.sellerName.charAt(0) : 'S';
-      document.getElementById('chatItemImg').src = product.image;
-      document.getElementById('chatItemTitle').textContent = product.title;
-      document.getElementById('chatItemPrice').textContent = `₹ ${Number(product.price).toLocaleString('en-IN')}`;
+      document.getElementById('chatItemImg').src = product.image || 'https://placehold.co/100';
+      document.getElementById('chatItemTitle').textContent = product.title || '';
+      document.getElementById('chatItemPrice').textContent = `₹ ${Number(product.price || 0).toLocaleString('en-IN')}`;
 
       if (activeChatUnsubscribe) {
         activeChatUnsubscribe();
@@ -1533,7 +1432,8 @@
         renderChatMessages();
       }
 
-      document.getElementById('chatModal').classList.remove('hidden');
+      const cModal = document.getElementById('chatModal');
+      cModal.style.display = 'flex';
     }
 
     function ensureDefaultChatHistory(product) {
@@ -1625,7 +1525,7 @@
         if (lower.includes('available') || lower.includes('उपलब्ध')) {
           reply = `Haan bhai, ${prod.title} abhi available hai! Aap kab dekhna chahenge?`;
         } else if (lower.includes('final') || lower.includes('price') || lower.includes('last')) {
-          const discount = Math.round(prod.price * 0.92);
+          const discount = Math.round((prod.price || 1000) * 0.92);
           reply = `Main aapko ₹${discount.toLocaleString('en-IN')} tak de sakta hoon, genuine buyer ke liye.`;
         } else if (lower.includes('delivery') || lower.includes('ship') || lower.includes('up')) {
           reply = `Haan, UP ke kisi bhi district me parcel se bhej sakte hain. Meetup bhi possible hai.`;
@@ -1659,7 +1559,8 @@
         activeChatUnsubscribe();
         activeChatUnsubscribe = null;
       }
-      document.getElementById('chatModal').classList.add('hidden');
+      const cModal = document.getElementById('chatModal');
+      cModal.style.display = 'none';
     }
 
     // Inbox List Modal
@@ -1695,7 +1596,8 @@
         }).join('');
       }
 
-      document.getElementById('chatListModal').classList.remove('hidden');
+      const clModal = document.getElementById('chatListModal');
+      clModal.style.display = 'flex';
     }
 
     function openChatFromList(prodId) {
@@ -1707,7 +1609,8 @@
     }
 
     function closeChatListModal() {
-      document.getElementById('chatListModal').classList.add('hidden');
+      const clModal = document.getElementById('chatListModal');
+      clModal.style.display = 'none';
     }
 
     function toggleFavorite(btn) {
@@ -1740,11 +1643,13 @@
       } else {
         showAdminLoginView();
       }
-      document.getElementById('adminModal').classList.remove('hidden');
+      const adm = document.getElementById('adminModal');
+      adm.style.display = 'flex';
     }
 
     function closeAdminModal() {
-      document.getElementById('adminModal').classList.add('hidden');
+      const adm = document.getElementById('adminModal');
+      adm.style.display = 'none';
     }
 
     function showAdminLoginView() {
@@ -1823,18 +1728,18 @@
         <tr class="hover:bg-gray-50 transition">
           <td class="p-2.5 font-bold text-gray-800">
             <div class="flex items-center gap-2">
-              <img src="${p.image}" class="w-8 h-8 rounded object-cover border">
-              <span class="truncate max-w-[140px]">${p.title}</span>
+              <img src="${p.image || 'https://placehold.co/100'}" class="w-8 h-8 rounded object-cover border">
+              <span class="truncate max-w-[140px]">${p.title || 'Untitled'}</span>
             </div>
           </td>
-          <td class="p-2.5 font-bold text-olxTeal">₹${Number(p.price).toLocaleString('en-IN')}</td>
-          <td class="p-2.5">${p.sellerName || 'N/A'}<br><span class="text-gray-400 font-mono">${p.sellerPhone}</span></td>
+          <td class="p-2.5 font-bold text-olxTeal">₹${Number(p.price || 0).toLocaleString('en-IN')}</td>
+          <td class="p-2.5">${p.sellerName || 'N/A'}<br><span class="text-gray-400 font-mono">${p.sellerPhone || ''}</span></td>
           <td class="p-2.5">${p.location || 'UP'}</td>
           <td class="p-2.5 text-right space-x-1 whitespace-nowrap">
-            <button onclick="toggleVerifyAd('${p.id}')" class="px-2 py-1 rounded text-[11px] font-semibold ${p.isVerified ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+            <button onclick="toggleVerifyAd('${p.id}')" class="px-2 py-1 rounded text-[11px] font-semibold cursor-pointer ${p.isVerified ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
               ${p.isVerified ? 'Unverify' : 'Verify'}
             </button>
-            <button onclick="adminDeleteAd('${p.id}')" class="px-2 py-1 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded text-[11px] font-bold" title="Delete Fake Ad">
+            <button onclick="adminDeleteAd('${p.id}')" class="px-2 py-1 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded text-[11px] font-bold cursor-pointer" title="Delete Fake Ad">
               Delete
             </button>
           </td>
@@ -1853,7 +1758,10 @@
       }
     }
 
-    function adminDeleteAd(id) {
+    async function adminDeleteAd(id) {
+      if (window.ResellFirebase && window.ResellFirebase.isFirebaseReady()) {
+        await window.ResellFirebase.deleteAd(id);
+      }
       products = products.filter(p => p.id !== id);
       saveLocalProducts();
       renderProducts();
