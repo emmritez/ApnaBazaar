@@ -1100,8 +1100,20 @@
 
     // App Initialization
     function initApp() {
-      loadFallbackProducts();
       applyLanguage(currentLang);
+
+      // Start listening to Firebase immediately
+      if (window.ResellFirebase && window.ResellFirebase.isFirebaseReady()) {
+        const tag = document.getElementById('backendStatusTag');
+        const text = document.getElementById('backendStatusText');
+        if (tag && text) {
+          tag.classList.remove('hidden');
+          text.textContent = 'Cloud Connected';
+        }
+        startFirebaseRealtimeListeners();
+      } else {
+        loadFallbackProducts();
+      }
 
       window.addEventListener('firebase-auth-ready', () => {
         const tag = document.getElementById('backendStatusTag');
@@ -1110,13 +1122,8 @@
           tag.classList.remove('hidden');
           text.textContent = 'Cloud Connected';
         }
-        showToast("Connected to Firebase Backend!");
         startFirebaseRealtimeListeners();
       });
-
-      if (window.ResellFirebase && window.ResellFirebase.isFirebaseReady()) {
-        startFirebaseRealtimeListeners();
-      }
     }
 
     function loadFallbackProducts() {
@@ -1129,17 +1136,19 @@
         }
       } else {
         products = [];
-        saveLocalProducts();
       }
       renderProducts();
     }
-
-    function saveLocalProducts() {
-      try {
-        localStorage.setItem('apnabazaar_up_products', JSON.stringify(products));
-      } catch (e) {
-        console.warn("Storage quota exceeded, keeping in-memory:", e);
+    async function adminDeleteAd(id) {
+      if (window.ResellFirebase && window.ResellFirebase.isFirebaseReady()) {
+        await window.ResellFirebase.deleteAd(id);
       }
+      products = products.filter(p => p.id !== id);
+      saveLocalProducts();
+      renderProducts();
+      refreshAdminStats();
+      showToast("विज्ञापन सफलतापूर्वक हटा दिया गया।");
+    }
     }
 
     function startFirebaseRealtimeListeners() {
