@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ApnaBazaar UP - Classifieds & Reseller Marketplace</title>
+  <!-- PWA Meta & Web App Manifest -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#002f34">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ApnaBazaar">
   <!-- Favicon link (Browser Tab Icon) -->
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="apple-touch-icon" href="./favicon.svg">
@@ -1832,6 +1838,17 @@
 
     window.onload = function() {
       initApp();
+
+      // Register Progressive Web App (PWA) Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+          .then((registration) => {
+            console.log('[PWA]: ServiceWorker registered successfully with scope:', registration.scope);
+          })
+          .catch((error) => {
+            console.warn('[PWA]: ServiceWorker registration failed:', error);
+          });
+      }
     };
   </script>
 </body>
