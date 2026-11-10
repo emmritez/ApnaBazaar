@@ -51,6 +51,17 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+    /* Safe padding for mobile bottom bar */
+    .pb-mobile-nav {
+      padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
   </style>
 
   <!-- Firebase Modular SDK -->
@@ -66,6 +77,8 @@
       getFirestore, 
       collection, 
       addDoc, 
+      deleteDoc,
+      doc,
       onSnapshot 
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import { 
@@ -76,8 +89,7 @@
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
     /* =========================================================================
-       🔥 LIVE INTERNET SYNC CONFIGURATION (हर मोबाइल/कंप्यूटर पर दिखने के लिए)
-       Firebase Console से अपनी कॉन्फिग यहाँ पेस्ट करें:
+       🔥 LIVE INTERNET SYNC CONFIGURATION
        ========================================================================= */
     const customFirebaseConfig = {
       apiKey: "AIzaSyBYn8QZ0zaLnq8WvFpkpghhCizlOv8ZD2g",
@@ -114,27 +126,40 @@
       try {
         app = initializeApp(firebaseConfig);
         db = getFirestore(app);
-        auth = getAuth(app);
+        isFirebaseReady = true;
+
         try {
           storage = getStorage(app);
         } catch (sErr) {
           console.warn("Storage not available, using base64 fallback", sErr);
         }
 
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          signInWithCustomToken(auth, __initial_auth_token).catch(() => signInAnonymously(auth));
-        } else {
-          signInAnonymously(auth);
+        try {
+          auth = getAuth(app);
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            signInWithCustomToken(auth, __initial_auth_token).catch(() => {
+              signInAnonymously(auth).catch((authErr) => {
+                console.warn("Anonymous auth not enabled in Firebase Console; proceeding with guest session:", authErr?.message);
+              });
+            });
+          } else {
+            signInAnonymously(auth).catch((authErr) => {
+              console.warn("Anonymous auth not enabled in Firebase Console; proceeding with guest session:", authErr?.message);
+            });
+          }
+
+          onAuthStateChanged(auth, (user) => {
+            if (user) {
+              currentUser = user;
+              window.currentUserId = user.uid;
+            }
+          });
+        } catch (authInitErr) {
+          console.warn("Auth initialization failed; Firestore works independently in test mode:", authInitErr);
         }
 
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            currentUser = user;
-            window.currentUserId = user.uid;
-            isFirebaseReady = true;
-            window.dispatchEvent(new CustomEvent('firebase-auth-ready', { detail: { user } }));
-          }
-        });
+        // Notify app that Firestore is ready
+        window.dispatchEvent(new CustomEvent('firebase-auth-ready', { detail: { ready: true } }));
       } catch (err) {
         console.warn("Firebase initialization skipped (running local offline mode):", err);
       }
@@ -145,14 +170,14 @@
       db,
       auth,
       storage,
-      isFirebaseReady: () => isFirebaseReady,
+      isFirebaseReady: () => isFirebaseReady && db !== null,
       getUser: () => currentUser,
 
       async postAd(adPayload, imageRawFile) {
         let imageUrl = adPayload.image;
         if (storage && imageRawFile && typeof imageRawFile !== 'string') {
           try {
-            const fileRef = storageRef(storage, `artifacts/${appId}/public/ads/${Date.now()}_${imageRawFile.name}`);
+            const fileRef = storageRef(storage, `ads/${Date.now()}_${imageRawFile.name}`);
             const snapshot = await uploadBytes(fileRef, imageRawFile);
             imageUrl = await getDownloadURL(snapshot.ref);
           } catch (e) {
@@ -167,9 +192,9 @@
           timestamp: Date.now()
         };
 
-        if (db && currentUser) {
+        if (db) {
           try {
-            const adsCol = collection(db, 'artifacts', appId, 'public', 'data', 'ads');
+            const adsCol = collection(db, 'ads');
             const docRef = await addDoc(adsCol, cleanAd);
             cleanAd.id = docRef.id;
             return cleanAd;
@@ -181,9 +206,9 @@
       },
 
       subscribeAds(onAdsUpdated, onError) {
-        if (!db || !currentUser) return null;
+        if (!db) return null;
         try {
-          const adsCol = collection(db, 'artifacts', appId, 'public', 'data', 'ads');
+          const adsCol = collection(db, 'ads');
           return onSnapshot(adsCol, (snapshot) => {
             const list = [];
             snapshot.forEach((d) => list.push({ id: d.id, ...d.data() }));
@@ -198,32 +223,41 @@
         }
       },
 
+      async deleteAd(adId) {
+        if (!db || !adId) return;
+        try {
+          await deleteDoc(doc(db, 'ads', adId));
+        } catch (e) {
+          console.warn("Firestore deleteAd error:", e);
+        }
+      },
+
       async sendChatMessage(adId, messagePayload) {
-        if (db && currentUser) {
+        if (db) {
           try {
-            const chatCol = collection(db, 'artifacts', appId, 'public', 'data', `chat_${adId}`);
+            const chatCol = collection(db, `chats_${adId}`);
             await addDoc(chatCol, {
               ...messagePayload,
               timestamp: Date.now(),
-              senderUid: currentUser.uid
+              senderUid: currentUser?.uid || 'guest-user'
             });
             return true;
           } catch (e) {
-            console.warn("Firestore chat error:", e);
+            console.warn("Firestore sendChatMessage error:", e);
           }
         }
         return false;
       },
 
-      subscribeChat(adId, onMessages, onError) {
-        if (!db || !currentUser) return null;
+      subscribeChat(adId, onChatUpdated, onError) {
+        if (!db) return null;
         try {
-          const chatCol = collection(db, 'artifacts', appId, 'public', 'data', `chat_${adId}`);
+          const chatCol = collection(db, `chats_${adId}`);
           return onSnapshot(chatCol, (snapshot) => {
-            const messages = [];
-            snapshot.forEach((d) => messages.push({ id: d.id, ...d.data() }));
-            messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-            onMessages(messages);
+            const msgs = [];
+            snapshot.forEach((d) => msgs.push({ id: d.id, ...d.data() }));
+            msgs.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            onChatUpdated(msgs);
           }, (err) => {
             if (onError) onError(err);
           });
@@ -235,29 +269,28 @@
     };
   </script>
 </head>
-
-<body class="bg-[#f7f8f9] text-[#002f34] font-sans min-h-screen flex flex-col antialiased">
+<body class="bg-[#f7f8f9] text-[#002f34] font-sans min-h-screen flex flex-col antialiased pb-mobile-nav md:pb-0">
 
   <!-- ================= TOP HEADER ================= -->
   <header class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-4">
       
       <!-- Brand Logo -->
-      <div class="flex items-center gap-2 cursor-pointer" onclick="resetFilters()">
-        <div class="w-10 h-10 rounded-xl bg-olxBlue flex items-center justify-center text-white text-xl font-black tracking-tight shadow">
+      <div class="flex items-center gap-1.5 sm:gap-2 cursor-pointer shrink-0" onclick="resetFilters()">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-olxBlue flex items-center justify-center text-white text-base sm:text-xl font-black tracking-tight shadow">
           UP
         </div>
         <div class="leading-tight">
-          <span class="text-xl sm:text-2xl font-black tracking-tight text-olxBlue">Apna<span class="text-olxTeal">Bazaar</span></span>
-          <span class="hidden sm:inline-block text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded ml-1 uppercase">Uttar Pradesh</span>
+          <span class="text-lg sm:text-2xl font-black tracking-tight text-olxBlue">Apna<span class="text-olxTeal">Bazaar</span></span>
+          <span class="hidden lg:inline-block text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded ml-1 uppercase">Uttar Pradesh</span>
         </div>
       </div>
 
-      <!-- UP District Selector (Desktop) -->
-      <div class="relative min-w-[150px] sm:min-w-[190px] hidden md:block">
-        <div class="flex items-center border-2 border-olxBlue rounded-lg px-3 py-2 bg-white hover:border-olxTeal transition-colors">
-          <i class="fa-solid fa-location-dot text-olxBlue mr-2 text-sm"></i>
-          <select id="locationFilter" onchange="filterProducts()" class="w-full bg-transparent text-sm font-semibold text-olxBlue outline-none cursor-pointer">
+      <!-- UP District Selector (Desktop & Tablet) -->
+      <div class="relative min-w-[140px] lg:min-w-[190px] hidden sm:block shrink-0">
+        <div class="flex items-center border-2 border-olxBlue rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 bg-white hover:border-olxTeal transition-colors">
+          <i class="fa-solid fa-location-dot text-olxBlue mr-1.5 text-xs sm:text-sm"></i>
+          <select id="locationFilter" onchange="filterProducts()" class="w-full bg-transparent text-xs sm:text-sm font-semibold text-olxBlue outline-none cursor-pointer">
             <option value="All">All Uttar Pradesh</option>
             <option value="Jhansi">Jhansi</option>
             <option value="Lucknow">Lucknow</option>
@@ -277,79 +310,73 @@
         </div>
       </div>
 
-      <!-- Search Bar -->
-      <div class="flex-1 max-w-xl relative">
+      <!-- Search Bar (Adaptive width) -->
+      <div class="flex-1 max-w-2xl relative">
         <div class="flex items-center border-2 border-olxBlue rounded-lg overflow-hidden bg-white focus-within:border-olxTeal">
           <input 
             type="text" 
             id="searchInput" 
             onkeyup="filterProducts()"
-            placeholder="Search resale lots, mobiles, bikes across UP..." 
-            class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base outline-none text-olxBlue"
+            placeholder="Search items across UP..." 
+            class="w-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm md:text-base outline-none text-olxBlue"
           />
-          <button onclick="filterProducts()" class="bg-olxBlue text-white px-4 py-2 hover:bg-[#003c42] transition-colors" title="Search">
-            <i class="fa-solid fa-magnifying-glass"></i>
+          <button onclick="filterProducts()" class="bg-olxBlue text-white px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-[#003c42] transition-colors" title="Search">
+            <i class="fa-solid fa-magnifying-glass text-xs sm:text-sm"></i>
           </button>
         </div>
       </div>
 
-      <!-- Actions: Chats & Post Ad Button -->
-      <div class="flex items-center gap-2 sm:gap-4">
+      <!-- Actions: Desktop & Tablet Only (Mobile uses Bottom Nav) -->
+      <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
         <!-- Backend Status Tag -->
-        <div id="backendStatusTag" class="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full border border-gray-200">
+        <div id="backendStatusTag" class="hidden xl:flex items-center gap-1.5 text-[11px] font-semibold bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full border border-gray-200">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span id="backendStatusText">Local Ready</span>
+          <span id="backendStatusText">Cloud Connected</span>
         </div>
-
-        <!-- Admin Portal Trigger Button -->
-        <button onclick="handleAdminTrigger()" id="adminNavBtn" class="p-2 text-gray-500 hover:text-olxBlue transition-colors rounded-lg hover:bg-gray-100 flex items-center gap-1 text-xs font-semibold" title="Admin Portal">
-          <i class="fa-solid fa-shield-halved text-amber-600 text-base"></i>
-          <span class="hidden sm:inline">Admin</span>
-        </button>
-
-        <!-- Chat Inbox Button -->
-        <button onclick="openChatListModal()" class="relative p-2.5 text-olxBlue hover:text-olxTeal transition-colors" title="My Chats">
-          <i class="fa-regular fa-comment-dots text-2xl"></i>
-          <span id="unreadBadge" class="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">1</span>
-        </button>
 
         <!-- Language Toggle Button -->
         <button 
           id="langToggleBtn" 
           onclick="toggleLanguage()" 
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 hover:border-olxTeal text-xs font-bold text-olxBlue bg-gray-50 hover:bg-gray-100 transition shadow-xs"
+          class="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg border border-gray-300 hover:border-olxTeal text-xs font-bold text-olxBlue bg-gray-50 hover:bg-gray-100 transition shadow-xs"
           title="Switch Language">
-          <i class="fa-solid fa-language text-sm text-olxTeal"></i>
-          <span id="langLabel">English</span>
+          <i class="fa-solid fa-language text-xs sm:text-sm text-olxTeal"></i>
+          <span id="langLabel" class="text-[11px] sm:text-xs">English</span>
         </button>
 
-        <!-- Admin Portal Trigger Button -->
+        <!-- Admin Portal Trigger Button (Desktop/Tablet) -->
         <button 
           onclick="openAdminModal()" 
-          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-300 hover:border-olxBlue text-xs font-semibold text-gray-600 hover:text-olxBlue transition"
+          class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-300 hover:border-olxBlue text-xs font-semibold text-gray-600 hover:text-olxBlue transition"
           title="Admin Portal">
-          <i class="fa-solid fa-user-shield text-sm"></i>
-          <span class="hidden lg:inline" data-i18n="admin_btn">Admin</span>
+          <i class="fa-solid fa-user-shield text-xs sm:text-sm text-amber-600"></i>
+          <span class="hidden md:inline" data-i18n="admin_btn">Admin</span>
         </button>
 
-        <!-- Post Ad (SELL) Button -->
+        <!-- Chat Inbox Button (Desktop/Tablet) -->
+        <button onclick="openChatListModal()" class="hidden sm:flex relative p-2 text-olxBlue hover:text-olxTeal transition-colors" title="My Chats">
+          <i class="fa-regular fa-comment-dots text-xl sm:text-2xl"></i>
+          <span id="unreadBadge" class="absolute top-0 right-0 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">1</span>
+        </button>
+
+        <!-- Post Ad (SELL) Button (Desktop/Tablet) -->
         <button 
           onclick="openPostAdModal()" 
-          class="inline-flex items-center justify-center px-4 sm:px-6 py-2 font-bold text-sm sm:text-base uppercase tracking-wider text-olxBlue bg-olxYellow border-4 border-olxTeal rounded-full shadow hover:bg-yellow-400 active:scale-95 transition-all">
-          <i class="fa-solid fa-plus mr-1.5 font-black"></i>
+          class="hidden sm:inline-flex items-center justify-center px-3 sm:px-5 py-1.5 sm:py-2 font-bold text-xs sm:text-sm uppercase tracking-wider text-olxBlue bg-olxYellow border-2 sm:border-4 border-olxTeal rounded-full shadow hover:bg-yellow-400 active:scale-95 transition-all">
+          <i class="fa-solid fa-plus mr-1 font-black"></i>
           <span data-i18n="sell_btn">Sell</span>
         </button>
       </div>
 
     </div>
 
-    <!-- Mobile Location Selector Row -->
-    <div class="px-4 py-2 border-t border-gray-100 md:hidden bg-gray-50 flex items-center justify-between">
-      <div class="flex items-center text-xs font-semibold text-olxBlue">
-        <i class="fa-solid fa-location-dot text-red-500 mr-1.5"></i>
-        <span>ज़िला चुनें:</span>
+    <!-- Mobile Location Selector Row (Phone only) -->
+    <div class="px-3 py-1.5 border-t border-gray-100 sm:hidden bg-gray-50 flex items-center justify-between gap-2">
+      <div class="flex items-center text-xs font-semibold text-olxBlue shrink-0">
+        <i class="fa-solid fa-location-dot text-red-500 mr-1"></i>
+        <span>ज़िला:</span>
       </div>
-      <select id="mobileLocationFilter" onchange="syncLocation(this.value)" class="text-xs font-semibold bg-white border border-gray-300 rounded px-2 py-1 outline-none text-olxBlue">
+      <select id="mobileLocationFilter" onchange="syncLocation(this.value)" class="text-xs font-semibold bg-white border border-gray-300 rounded px-2 py-1 outline-none text-olxBlue flex-1 max-w-[200px]">
         <option value="All">All Uttar Pradesh</option>
         <option value="Jhansi">Jhansi</option>
         <option value="Lucknow">Lucknow</option>
@@ -369,9 +396,9 @@
     </div>
   </header>
 
-  <!-- ================= CATEGORY BAR ================= -->
-  <nav class="bg-white border-b border-gray-200 overflow-x-auto shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center gap-2 sm:gap-4 whitespace-nowrap text-xs sm:text-sm">
+  <!-- ================= CATEGORY BAR (Horizontal Touch Scroll) ================= -->
+  <nav class="bg-white border-b border-gray-200 overflow-x-auto no-scrollbar shadow-xs">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 flex items-center gap-1.5 sm:gap-3 whitespace-nowrap text-xs sm:text-sm">
       <button onclick="selectCategory('All')" data-cat="All" class="cat-pill font-bold text-olxBlue bg-gray-100 px-3 py-1 rounded-md shadow-xs border-b-2 border-olxTeal">
         All Categories
       </button>
@@ -400,34 +427,68 @@
   </nav>
 
   <!-- ================= MAIN CONTENT AREA ================= -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex-1 w-full">
     <!-- Header title & items count -->
-    <div class="flex items-center justify-between mb-5">
+    <div class="flex items-center justify-between mb-3 sm:mb-5">
       <div>
-        <h1 class="text-xl sm:text-2xl font-black text-olxBlue tracking-tight">Fresh Recommendations in UP</h1>
-        <p id="listingCount" class="text-xs sm:text-sm text-gray-500 font-medium">Loading ads...</p>
+        <h1 class="text-base sm:text-xl md:text-2xl font-black text-olxBlue tracking-tight">Fresh Recommendations in UP</h1>
+        <p id="listingCount" class="text-[11px] sm:text-xs md:text-sm text-gray-500 font-medium">Loading ads...</p>
       </div>
-      <button onclick="openPostAdModal()" class="text-xs sm:text-sm font-bold text-olxTeal hover:underline flex items-center gap-1">
+      <button onclick="openPostAdModal()" class="hidden sm:flex text-xs sm:text-sm font-bold text-olxTeal hover:underline items-center gap-1">
         <i class="fa-solid fa-plus-circle"></i> Post New Listing
       </button>
     </div>
 
-    <!-- Product Grid -->
-    <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+    <!-- Product Grid (Responsive: 2-col Mobile, 3-col Tablet, 4-col Laptop, 5-col Wide Screen) -->
+    <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-4 md:gap-5">
       <!-- Injected via JavaScript -->
     </div>
 
     <!-- Empty State -->
-    <div id="emptyState" class="hidden text-center py-16 bg-white rounded-2xl border border-gray-200 mt-4">
-      <i class="fa-regular fa-folder-open text-5xl text-gray-300 mb-3"></i>
-      <h3 class="text-lg font-bold text-gray-700" data-i18n="empty_title">कोई विज्ञापन नहीं मिला</h3>
-      <p class="text-sm text-gray-500 max-w-md mx-auto mt-1" data-i18n="empty_desc">वर्तमान में कोई विज्ञापन उपलब्ध नहीं है। अपना पहला विज्ञापन पोस्ट करें या फ़िल्टर बदलें।</p>
-      <div class="mt-4 flex items-center justify-center gap-3">
-        <button onclick="resetFilters()" class="px-4 py-2 bg-gray-100 text-gray-800 text-sm font-semibold rounded-lg hover:bg-gray-200" data-i18n="show_all_ads">सभी विज्ञापन देखें</button>
-        <button onclick="openPostAdModal()" class="px-4 py-2 bg-olxBlue text-white text-sm font-semibold rounded-lg hover:bg-opacity-90" data-i18n="post_first_ad">+ पहला विज्ञापन पोस्ट करें</button>
+    <div id="emptyState" class="hidden text-center py-12 sm:py-16 bg-white rounded-2xl border border-gray-200 mt-4 px-4">
+      <i class="fa-regular fa-folder-open text-4xl sm:text-5xl text-gray-300 mb-3"></i>
+      <h3 class="text-base sm:text-lg font-bold text-gray-700" data-i18n="empty_title">कोई विज्ञापन नहीं मिला</h3>
+      <p class="text-xs sm:text-sm text-gray-500 max-w-md mx-auto mt-1" data-i18n="empty_desc">वर्तमान में कोई विज्ञापन उपलब्ध नहीं है। अपना पहला विज्ञापन पोस्ट करें या फ़िल्टर बदलें।</p>
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+        <button onclick="resetFilters()" class="px-3 sm:px-4 py-2 bg-gray-100 text-gray-800 text-xs sm:text-sm font-semibold rounded-lg hover:bg-gray-200" data-i18n="show_all_ads">सभी विज्ञापन देखें</button>
+        <button onclick="openPostAdModal()" class="px-3 sm:px-4 py-2 bg-olxBlue text-white text-xs sm:text-sm font-semibold rounded-lg hover:bg-opacity-90" data-i18n="post_first_ad">+ पहला विज्ञापन पोस्ट करें</button>
       </div>
     </div>
   </main>
+
+  <!-- ================= MOBILE APP-STYLE BOTTOM NAVIGATION (Phones Only) ================= -->
+  <nav class="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-bottom">
+    <!-- Home / Explore -->
+    <button onclick="resetFilters(); window.scrollTo({top:0, behavior:'smooth'})" class="flex flex-col items-center justify-center text-olxBlue py-1 px-2">
+      <i class="fa-solid fa-house text-base"></i>
+      <span class="text-[10px] font-bold mt-0.5">Home</span>
+    </button>
+
+    <!-- My Chats -->
+    <button onclick="openChatListModal()" class="flex flex-col items-center justify-center text-gray-600 hover:text-olxBlue py-1 px-2 relative">
+      <i class="fa-regular fa-comment-dots text-base"></i>
+      <span class="text-[10px] font-semibold mt-0.5">Chats</span>
+      <span id="mobileUnreadBadge" class="absolute top-0 right-1 bg-red-500 text-white text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">1</span>
+    </button>
+
+    <!-- SELL Button (Floating Center Action) -->
+    <button onclick="openPostAdModal()" class="flex flex-col items-center justify-center -mt-5 bg-olxYellow border-4 border-olxTeal w-13 h-13 rounded-full shadow-lg active:scale-95 transition-transform">
+      <i class="fa-solid fa-plus text-olxBlue text-lg font-black"></i>
+      <span class="text-[9px] font-black uppercase text-olxBlue">Sell</span>
+    </button>
+
+    <!-- Admin Portal -->
+    <button onclick="openAdminModal()" class="flex flex-col items-center justify-center text-gray-600 hover:text-olxBlue py-1 px-2">
+      <i class="fa-solid fa-shield-halved text-base text-amber-600"></i>
+      <span class="text-[10px] font-semibold mt-0.5">Admin</span>
+    </button>
+
+    <!-- Language Switcher -->
+    <button onclick="toggleLanguage()" class="flex flex-col items-center justify-center text-gray-600 hover:text-olxBlue py-1 px-2">
+      <i class="fa-solid fa-language text-base text-olxTeal"></i>
+      <span class="text-[10px] font-semibold mt-0.5" id="mobileLangLabel">EN/HI</span>
+    </button>
+  </nav>
 
   <!-- ================= ADMIN LOGIN & MANAGEMENT MODAL ================= -->
   <div id="adminModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs overflow-y-auto">
@@ -1126,6 +1187,14 @@
       });
     }
 
+    function saveLocalProducts() {
+      try {
+        localStorage.setItem('apnabazaar_up_products', JSON.stringify(products));
+      } catch (e) {
+        console.warn("Could not save to localStorage:", e);
+      }
+    }
+
     function loadFallbackProducts() {
       const stored = localStorage.getItem('apnabazaar_up_products');
       if (stored) {
@@ -1139,6 +1208,7 @@
       }
       renderProducts();
     }
+
     async function adminDeleteAd(id) {
       if (window.ResellFirebase && window.ResellFirebase.isFirebaseReady()) {
         await window.ResellFirebase.deleteAd(id);
@@ -1148,7 +1218,6 @@
       renderProducts();
       refreshAdminStats();
       showToast("विज्ञापन सफलतापूर्वक हटा दिया गया।");
-    }
     }
 
     function startFirebaseRealtimeListeners() {
@@ -1202,31 +1271,31 @@
       if (emptyState) emptyState.classList.add('hidden');
       grid.innerHTML = filtered.map(p => `
         <div onclick="openProductModal('${p.id}')" class="bg-white rounded-xl border border-gray-200 hover:border-olxTeal hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden group">
-          <div class="relative bg-gray-100 h-44 overflow-hidden flex items-center justify-center">
+          <div class="relative bg-gray-100 h-32 sm:h-40 md:h-44 overflow-hidden flex items-center justify-center">
             <img src="${p.image}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x300/e2e8f0/0f172a?text=ApnaBazaar+Item'">
-            <span class="absolute top-2.5 left-2.5 bg-olxBlue/80 backdrop-blur-xs text-white text-[11px] font-bold px-2 py-0.5 rounded shadow">
-              <i class="fa-solid fa-tag text-olxYellow mr-1 text-[10px]"></i>${p.category}
+            <span class="absolute top-1.5 sm:top-2.5 left-1.5 sm:left-2.5 bg-olxBlue/85 backdrop-blur-xs text-white text-[9px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded shadow truncate max-w-[85%]">
+              <i class="fa-solid fa-tag text-olxYellow mr-1 text-[8px] sm:text-[10px]"></i>${p.category}
             </span>
-            ${p.isVerified ? '<span class="absolute bottom-2.5 left-2.5 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow"><i class="fa-solid fa-certificate mr-1"></i>Verified</span>' : ''}
-            <button onclick="event.stopPropagation(); toggleFavorite(this)" class="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-gray-400 hover:text-red-500 flex items-center justify-center shadow transition-colors">
-              <i class="fa-regular fa-heart"></i>
+            ${p.isVerified ? '<span class="absolute bottom-1.5 sm:bottom-2.5 left-1.5 sm:left-2.5 bg-emerald-600 text-white text-[8px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded shadow"><i class="fa-solid fa-certificate mr-1"></i>Verified</span>' : ''}
+            <button onclick="event.stopPropagation(); toggleFavorite(this)" class="absolute top-1.5 sm:top-2.5 right-1.5 sm:right-2.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 hover:bg-white text-gray-400 hover:text-red-500 flex items-center justify-center shadow transition-colors">
+              <i class="fa-regular fa-heart text-xs sm:text-sm"></i>
             </button>
           </div>
 
-          <div class="p-3.5 flex-1 flex flex-col justify-between">
+          <div class="p-2.5 sm:p-3.5 flex-1 flex flex-col justify-between">
             <div>
-              <div class="flex items-baseline justify-between mb-1">
-                <span class="text-xl font-black text-olxBlue">₹ ${Number(p.price).toLocaleString('en-IN')}</span>
+              <div class="flex items-baseline justify-between mb-0.5 sm:mb-1">
+                <span class="text-base sm:text-lg md:text-xl font-black text-olxBlue">₹ ${Number(p.price).toLocaleString('en-IN')}</span>
               </div>
-              <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug mb-2 group-hover:text-olxTeal transition-colors">${p.title}</h3>
+              <h3 class="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 leading-tight sm:leading-snug mb-1.5 sm:mb-2 group-hover:text-olxTeal transition-colors">${p.title}</h3>
             </div>
 
-            <div class="border-t border-gray-100 pt-2 flex items-center justify-between text-[11px] text-gray-500">
-              <span class="truncate flex items-center">
-                <i class="fa-solid fa-location-dot text-red-500 mr-1"></i>
-                <span class="font-medium text-gray-700">${p.location || 'Uttar Pradesh'}, UP</span>
+            <div class="border-t border-gray-100 pt-1.5 sm:pt-2 flex items-center justify-between text-[10px] sm:text-[11px] text-gray-500">
+              <span class="truncate flex items-center pr-1">
+                <i class="fa-solid fa-location-dot text-red-500 mr-1 shrink-0"></i>
+                <span class="font-medium text-gray-700 truncate">${p.location || 'UP'}</span>
               </span>
-              <span class="text-gray-400 uppercase tracking-tighter">${p.date || 'Active'}</span>
+              <span class="text-gray-400 uppercase tracking-tighter shrink-0">${p.date || 'Active'}</span>
             </div>
           </div>
         </div>
