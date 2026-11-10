@@ -284,10 +284,35 @@
           <span id="backendStatusText">Local Ready</span>
         </div>
 
+        <!-- Admin Portal Trigger Button -->
+        <button onclick="handleAdminTrigger()" id="adminNavBtn" class="p-2 text-gray-500 hover:text-olxBlue transition-colors rounded-lg hover:bg-gray-100 flex items-center gap-1 text-xs font-semibold" title="Admin Portal">
+          <i class="fa-solid fa-shield-halved text-amber-600 text-base"></i>
+          <span class="hidden sm:inline">Admin</span>
+        </button>
+
         <!-- Chat Inbox Button -->
         <button onclick="openChatListModal()" class="relative p-2.5 text-olxBlue hover:text-olxTeal transition-colors" title="My Chats">
           <i class="fa-regular fa-comment-dots text-2xl"></i>
           <span id="unreadBadge" class="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">1</span>
+        </button>
+
+        <!-- Language Toggle Button -->
+        <button 
+          id="langToggleBtn" 
+          onclick="toggleLanguage()" 
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 hover:border-olxTeal text-xs font-bold text-olxBlue bg-gray-50 hover:bg-gray-100 transition shadow-xs"
+          title="Switch Language">
+          <i class="fa-solid fa-language text-sm text-olxTeal"></i>
+          <span id="langLabel">English</span>
+        </button>
+
+        <!-- Admin Portal Trigger Button -->
+        <button 
+          onclick="openAdminModal()" 
+          class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-300 hover:border-olxBlue text-xs font-semibold text-gray-600 hover:text-olxBlue transition"
+          title="Admin Portal">
+          <i class="fa-solid fa-user-shield text-sm"></i>
+          <span class="hidden lg:inline" data-i18n="admin_btn">Admin</span>
         </button>
 
         <!-- Post Ad (SELL) Button -->
@@ -295,88 +320,227 @@
           onclick="openPostAdModal()" 
           class="inline-flex items-center justify-center px-4 sm:px-6 py-2 font-bold text-sm sm:text-base uppercase tracking-wider text-olxBlue bg-olxYellow border-4 border-olxTeal rounded-full shadow hover:bg-yellow-400 active:scale-95 transition-all">
           <i class="fa-solid fa-plus mr-1.5 font-black"></i>
-          <span>Sell</span>
+          <span data-i18n="sell_btn">Sell</span>
         </button>
       </div>
 
     </div>
 
     <!-- Mobile Location Selector Row -->
-    <div class="md:hidden px-4 pb-2.5 pt-0.5">
-      <div class="flex items-center border border-gray-300 rounded px-2.5 py-1.5 bg-gray-50 text-xs font-medium">
-        <i class="fa-solid fa-map-pin text-olxTeal mr-2"></i>
-        <select id="mobileLocationFilter" onchange="syncLocation(this.value)" class="w-full bg-transparent outline-none">
-          <option value="All">All Uttar Pradesh</option>
-          <option value="Jhansi">Jhansi</option>
-          <option value="Lucknow">Lucknow</option>
-          <option value="Kanpur">Kanpur</option>
-          <option value="Varanasi">Varanasi</option>
-          <option value="Agra">Agra</option>
-          <option value="Prayagraj">Prayagraj</option>
-          <option value="Noida">Noida</option>
-          <option value="Ghaziabad">Ghaziabad</option>
-          <option value="Meerut">Meerut</option>
-          <option value="Bareilly">Bareilly</option>
-          <option value="Gorakhpur">Gorakhpur</option>
-        </select>
+    <div class="px-4 py-2 border-t border-gray-100 md:hidden bg-gray-50 flex items-center justify-between">
+      <div class="flex items-center text-xs font-semibold text-olxBlue">
+        <i class="fa-solid fa-location-dot text-red-500 mr-1.5"></i>
+        <span>ज़िला चुनें:</span>
       </div>
+      <select id="mobileLocationFilter" onchange="syncLocation(this.value)" class="text-xs font-semibold bg-white border border-gray-300 rounded px-2 py-1 outline-none text-olxBlue">
+        <option value="All">All Uttar Pradesh</option>
+        <option value="Jhansi">Jhansi</option>
+        <option value="Lucknow">Lucknow</option>
+        <option value="Kanpur">Kanpur</option>
+        <option value="Varanasi">Varanasi</option>
+        <option value="Agra">Agra</option>
+        <option value="Prayagraj">Prayagraj</option>
+        <option value="Noida">Noida</option>
+        <option value="Ghaziabad">Ghaziabad</option>
+        <option value="Meerut">Meerut</option>
+        <option value="Bareilly">Bareilly</option>
+        <option value="Gorakhpur">Gorakhpur</option>
+        <option value="Aligarh">Aligarh</option>
+        <option value="Ayodhya">Ayodhya</option>
+        <option value="Mathura">Mathura</option>
+      </select>
     </div>
   </header>
 
-  <!-- ================= CATEGORIES BAR ================= -->
-  <nav class="bg-white border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 overflow-x-auto flex items-center gap-3 sm:gap-6 text-xs sm:text-sm whitespace-nowrap">
-      <button onclick="selectCategory('All')" class="cat-pill font-bold text-olxBlue bg-gray-100 px-3 py-1 rounded-md shadow-xs border-b-2 border-olxTeal" data-cat="All">All Categories</button>
-      <button onclick="selectCategory('Wholesale / Resale Lots')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1" data-cat="Wholesale / Resale Lots"><i class="fa-solid fa-boxes-stacked mr-1 text-olxTeal"></i> Wholesale Lots</button>
-      <button onclick="selectCategory('Mobiles & Electronics')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1" data-cat="Mobiles & Electronics"><i class="fa-solid fa-mobile-screen-button mr-1 text-blue-600"></i> Electronics</button>
-      <button onclick="selectCategory('Vehicles')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1" data-cat="Vehicles"><i class="fa-solid fa-motorcycle mr-1 text-red-500"></i> Vehicles</button>
-      <button onclick="selectCategory('Fashion & Clothing')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1" data-cat="Fashion & Clothing"><i class="fa-solid fa-shirt mr-1 text-purple-600"></i> Fashion</button>
-      <button onclick="selectCategory('Furniture')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1" data-cat="Furniture"><i class="fa-solid fa-couch mr-1 text-amber-700"></i> Furniture</button>
-      <button onclick="selectCategory('Books & Education')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1" data-cat="Books & Education"><i class="fa-solid fa-book-open mr-1 text-emerald-600"></i> Books & Study</button>
-      <button onclick="selectCategory('Home Appliances')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1" data-cat="Home Appliances"><i class="fa-solid fa-blender mr-1 text-cyan-700"></i> Appliances</button>
+  <!-- ================= CATEGORY BAR ================= -->
+  <nav class="bg-white border-b border-gray-200 overflow-x-auto shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center gap-2 sm:gap-4 whitespace-nowrap text-xs sm:text-sm">
+      <button onclick="selectCategory('All')" data-cat="All" class="cat-pill font-bold text-olxBlue bg-gray-100 px-3 py-1 rounded-md shadow-xs border-b-2 border-olxTeal">
+        All Categories
+      </button>
+      <button onclick="selectCategory('Wholesale / Resale Lots')" data-cat="Wholesale / Resale Lots" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1">
+        📦 Wholesale Lots
+      </button>
+      <button onclick="selectCategory('Mobiles & Electronics')" data-cat="Mobiles & Electronics" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1">
+        📱 Mobiles & Electronics
+      </button>
+      <button onclick="selectCategory('Vehicles')" data-cat="Vehicles" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1">
+        🚗 Vehicles
+      </button>
+      <button onclick="selectCategory('Fashion & Clothing')" data-cat="Fashion & Clothing" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1">
+        👕 Fashion
+      </button>
+      <button onclick="selectCategory('Furniture')" data-cat="Furniture" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1">
+        🛋️ Furniture
+      </button>
+      <button onclick="selectCategory('Books & Education')" data-cat="Books & Education" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1">
+        📚 Books & Study
+      </button>
+      <button onclick="selectCategory('Home Appliances')" data-cat="Home Appliances" class="cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1">
+        ⚡ Appliances
+      </button>
     </div>
   </nav>
 
-  <!-- ================= BANNER ================= -->
-  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-    <div class="bg-gradient-to-r from-olxBlue via-[#00474e] to-olxTeal text-white rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+    <!-- Header title & items count -->
+    <div class="flex items-center justify-between mb-5">
       <div>
-        <div class="flex items-center gap-2 mb-1">
-          <span class="bg-olxYellow text-olxBlue text-[11px] font-black uppercase px-2 py-0.5 rounded">UP Resellers Network</span>
-          <span class="text-xs text-teal-200"><i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> 100% Private & Safe Deals</span>
-        </div>
-        <h1 class="text-lg sm:text-2xl font-bold">उत्तर प्रदेश में रीसेलर्स का अपना बाज़ार</h1>
-        <p class="text-xs sm:text-sm text-gray-200 mt-0.5">बिना फोन नंबर सार्वजनिक किए सुरक्षित इन-ऐप चैट से अपनी डील फाइनल करें।</p>
+        <h1 class="text-xl sm:text-2xl font-black text-olxBlue tracking-tight">Fresh Recommendations in UP</h1>
+        <p id="listingCount" class="text-xs sm:text-sm text-gray-500 font-medium">Loading ads...</p>
       </div>
-      <button onclick="openPostAdModal()" class="w-full md:w-auto bg-white text-olxBlue hover:bg-gray-100 font-bold px-5 py-2.5 rounded-xl text-sm transition shadow flex items-center justify-center gap-2">
-        <i class="fa-solid fa-camera text-olxTeal"></i>
-        <span>विज्ञापन पोस्ट करें (Post Ad)</span>
+      <button onclick="openPostAdModal()" class="text-xs sm:text-sm font-bold text-olxTeal hover:underline flex items-center gap-1">
+        <i class="fa-solid fa-plus-circle"></i> Post New Listing
       </button>
-    </div>
-  </section>
-
-  <!-- ================= LISTINGS FEED ================= -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
-    <div class="flex items-center justify-between mb-4">
-      <div class="flex items-center gap-2">
-        <h2 class="text-lg sm:text-xl font-bold text-olxBlue">Fresh Recommendations in UP</h2>
-      </div>
-      <p id="listingCount" class="text-xs sm:text-sm text-gray-500 font-medium">Showing items</p>
     </div>
 
     <!-- Product Grid -->
-    <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      <!-- Populated via JS -->
+    <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+      <!-- Injected via JavaScript -->
     </div>
 
     <!-- Empty State -->
     <div id="emptyState" class="hidden text-center py-16 bg-white rounded-2xl border border-gray-200 mt-4">
       <i class="fa-regular fa-folder-open text-5xl text-gray-300 mb-3"></i>
-      <h3 class="text-lg font-bold text-gray-700">कोई विज्ञापन नहीं मिला</h3>
-      <p class="text-sm text-gray-500 max-w-md mx-auto mt-1">आपके चुने हुए शहर या फ़िल्टर में कोई विज्ञापन उपलब्ध नहीं है। कृपया दूसरा शहर चुनें या अपना विज्ञापन पोस्ट करें।</p>
-      <button onclick="resetFilters()" class="mt-4 px-4 py-2 bg-olxBlue text-white text-sm font-semibold rounded-lg hover:bg-opacity-90">सभी विज्ञापन देखें</button>
+      <h3 class="text-lg font-bold text-gray-700" data-i18n="empty_title">कोई विज्ञापन नहीं मिला</h3>
+      <p class="text-sm text-gray-500 max-w-md mx-auto mt-1" data-i18n="empty_desc">वर्तमान में कोई विज्ञापन उपलब्ध नहीं है। अपना पहला विज्ञापन पोस्ट करें या फ़िल्टर बदलें।</p>
+      <div class="mt-4 flex items-center justify-center gap-3">
+        <button onclick="resetFilters()" class="px-4 py-2 bg-gray-100 text-gray-800 text-sm font-semibold rounded-lg hover:bg-gray-200" data-i18n="show_all_ads">सभी विज्ञापन देखें</button>
+        <button onclick="openPostAdModal()" class="px-4 py-2 bg-olxBlue text-white text-sm font-semibold rounded-lg hover:bg-opacity-90" data-i18n="post_first_ad">+ पहला विज्ञापन पोस्ट करें</button>
+      </div>
     </div>
   </main>
+
+  <!-- ================= ADMIN LOGIN & MANAGEMENT MODAL ================= -->
+  <div id="adminModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative p-5 sm:p-7">
+      <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      <!-- Admin Login View -->
+      <div id="adminLoginView">
+        <div class="flex items-center gap-3 mb-5">
+          <div class="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xl shadow">
+            <i class="fa-solid fa-user-shield text-olxYellow"></i>
+          </div>
+          <div>
+            <h2 class="text-xl sm:text-2xl font-black text-olxBlue" data-i18n="admin_login_title">Admin Portal Login</h2>
+            <p class="text-xs text-gray-500" data-i18n="admin_login_subtitle">प्रशासनिक अनुमतियों के साथ लॉगिन करें</p>
+          </div>
+        </div>
+
+        <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase mb-1" data-i18n="admin_user_label">Admin ID / Registered Mobile</label>
+            <input type="text" id="adminUserIdInput" required placeholder="10-digit mobile number" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-olxTeal outline-none font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase mb-1" data-i18n="admin_pass_label">Password</label>
+            <input type="password" id="adminPasswordInput" required placeholder="••••••••" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-olxTeal outline-none font-mono">
+          </div>
+
+          <div class="flex items-center justify-between text-xs pt-1">
+            <button type="button" onclick="showAdminResetView()" class="text-olxTeal hover:underline font-semibold" data-i18n="forgot_password">
+              Forgot / Change Password?
+            </button>
+          </div>
+
+          <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl transition shadow active:scale-98" data-i18n="admin_submit">
+            लॉगिन करें (Verify & Login)
+          </button>
+        </form>
+      </div>
+
+      <!-- Admin Reset Password View -->
+      <div id="adminResetView" class="hidden">
+        <div class="flex items-center gap-3 mb-4">
+          <button type="button" onclick="showAdminLoginView()" class="text-gray-500 hover:text-gray-900">
+            <i class="fa-solid fa-arrow-left text-lg"></i>
+          </button>
+          <div>
+            <h2 class="text-xl font-bold text-olxBlue" data-i18n="reset_pass_title">Reset Admin Password</h2>
+            <p class="text-xs text-gray-500" data-i18n="reset_pass_subtitle">पंजीकृत मोबाइल नंबर दर्ज करके पासवर्ड बदलें</p>
+          </div>
+        </div>
+
+        <form onsubmit="handleAdminResetPassword(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase mb-1" data-i18n="reg_mobile_label">Registered Mobile Number *</label>
+            <input type="tel" id="resetMobileInput" required pattern="[0-9]{10}" placeholder="10 Digit Mobile Number" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-olxTeal outline-none font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase mb-1" data-i18n="new_pass_label">New Password *</label>
+            <input type="password" id="newPasswordInput" minlength="6" required placeholder="Enter new secure password" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-olxTeal outline-none font-mono">
+          </div>
+          <button type="submit" class="w-full bg-olxTeal hover:bg-[#008f8a] text-white font-bold py-2.5 rounded-xl transition shadow" data-i18n="save_new_pass">
+            पासवर्ड अपडेट करें (Save New Password)
+          </button>
+        </form>
+      </div>
+
+      <!-- Admin Dashboard View -->
+      <div id="adminDashboardView" class="hidden space-y-6">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-200">
+          <div>
+            <h2 class="text-xl font-black text-olxBlue" data-i18n="admin_panel_title">Admin Control Panel</h2>
+            <p class="text-xs text-gray-500">ApnaBazaar UP Moderation & Management</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="showAdminResetView()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-2.5 py-1.5 rounded-lg border" data-i18n="change_pass_btn">
+              <i class="fa-solid fa-key mr-1"></i> Change Pass
+            </button>
+            <button onclick="handleAdminLogout()" class="text-xs bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold px-3 py-1.5 rounded-lg border border-rose-200" data-i18n="logout_btn">
+              <i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Logout
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Badges -->
+        <div class="grid grid-cols-3 gap-3">
+          <div class="p-3 bg-teal-50 border border-teal-200 rounded-xl">
+            <span class="text-xs font-bold text-teal-800" data-i18n="stat_total_ads">Total Active Ads</span>
+            <div id="adminTotalAds" class="text-2xl font-black text-olxTeal mt-0.5">0</div>
+          </div>
+          <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+            <span class="text-xs font-bold text-emerald-800" data-i18n="stat_verified">Verified Ads</span>
+            <div id="adminVerifiedAds" class="text-2xl font-black text-emerald-700 mt-0.5">0</div>
+          </div>
+          <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+            <span class="text-xs font-bold text-indigo-800" data-i18n="stat_districts">UP Districts</span>
+            <div id="adminActiveDistricts" class="text-2xl font-black text-indigo-700 mt-0.5">0</div>
+          </div>
+        </div>
+
+        <!-- Ads Moderation Table -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider" data-i18n="all_listings_mod">All Listings (Moderation & Delete)</h3>
+            <button onclick="confirmClearAllData()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold underline">
+              <i class="fa-solid fa-trash-can mr-1"></i> Clear All Data
+            </button>
+          </div>
+          <div class="border border-gray-200 rounded-xl overflow-hidden max-h-72 overflow-y-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-gray-50 border-b border-gray-200 text-gray-600 uppercase font-semibold">
+                <tr>
+                  <th class="p-2.5">Item</th>
+                  <th class="p-2.5">Price</th>
+                  <th class="p-2.5">Seller / Phone</th>
+                  <th class="p-2.5">Location</th>
+                  <th class="p-2.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminAdsTableBody" class="divide-y divide-gray-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ================= POST AD MODAL ================= -->
   <div id="postAdModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs overflow-y-auto">
@@ -645,6 +809,106 @@
     </div>
   </div>
 
+  <!-- ================= ADMIN LOGIN MODAL ================= -->
+  <div id="adminLoginModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+      <button onclick="closeAdminLoginModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+      <div class="text-center mb-5">
+        <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-2 text-xl font-bold">
+          <i class="fa-solid fa-user-shield"></i>
+        </div>
+        <h3 class="text-lg font-black text-olxBlue">Admin Verification</h3>
+        <p class="text-xs text-gray-500 mt-0.5">ApnaBazaar UP नियंत्रण केंद्र</p>
+      </div>
+      <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">Admin Security PIN</label>
+          <input type="password" id="adminPinInput" required placeholder="Enter PIN (Default: 9999)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-olxTeal focus:ring-1 focus:ring-olxTeal text-center tracking-widest font-mono text-base" />
+          <p class="text-[11px] text-gray-400 mt-1 text-center">Testing Hint: PIN है <strong class="text-gray-700">9999</strong></p>
+        </div>
+        <button type="submit" class="w-full bg-olxBlue hover:bg-[#003c42] text-white font-bold py-2.5 rounded-xl text-sm transition">
+          प्रवेश करें (Login)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= ADMIN MANAGEMENT DASHBOARD MODAL ================= -->
+  <div id="adminDashboardModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-5 backdrop-blur-xs overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- Admin Bar Header -->
+      <div class="bg-olxBlue text-white p-4 flex items-center justify-between border-b border-gray-700">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 bg-amber-400 text-olxBlue rounded-lg flex items-center justify-center font-bold">
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base leading-tight">ApnaBazaar Admin Center</h3>
+            <p class="text-[11px] text-teal-200">विज्ञापन समीक्षा, फेक ऐड रिमूवल और डेटा नियंत्रण</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="handleAdminLogout()" class="text-xs bg-rose-600/80 hover:bg-rose-600 text-white font-semibold px-3 py-1.5 rounded-lg transition">
+            Logout
+          </button>
+          <button onclick="closeAdminDashboardModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick KPI Stats Cards -->
+      <div class="p-4 bg-gray-50 border-b border-gray-200 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-xs">
+          <span class="block text-xl font-black text-olxBlue" id="adminTotalAds">0</span>
+          <span class="text-[11px] text-gray-500 font-semibold uppercase">Total Ads</span>
+        </div>
+        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-xs">
+          <span class="block text-xl font-black text-emerald-600" id="adminVerifiedAds">0</span>
+          <span class="text-[11px] text-gray-500 font-semibold uppercase">Verified Ads</span>
+        </div>
+        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-xs">
+          <span class="block text-xl font-black text-amber-600" id="adminActiveDistricts">0</span>
+          <span class="text-[11px] text-gray-500 font-semibold uppercase">Active Districts</span>
+        </div>
+        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-xs flex flex-col justify-center">
+          <button onclick="confirmClearAllData()" class="text-xs text-rose-600 hover:text-white hover:bg-rose-600 border border-rose-200 py-1.5 px-2 rounded-lg font-bold transition">
+            <i class="fa-solid fa-trash-can mr-1"></i> Clear All Data
+          </button>
+        </div>
+      </div>
+
+      <!-- Ads Table Container -->
+      <div class="flex-1 overflow-y-auto p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="font-bold text-sm text-gray-800">लाइव विज्ञापनों की सूची (Manage Listings)</h4>
+          <span class="text-xs text-gray-500">फेक विज्ञापन तुरंत हटाएं</span>
+        </div>
+
+        <div class="overflow-x-auto border border-gray-200 rounded-xl">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-gray-100 text-gray-600 uppercase text-[10px] tracking-wider border-b border-gray-200">
+              <tr>
+                <th class="p-3">Ad Photo & Title</th>
+                <th class="p-3">Price</th>
+                <th class="p-3">Location</th>
+                <th class="p-3">Seller Details</th>
+                <th class="p-3 text-center">Status</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminAdsTableBody" class="divide-y divide-gray-100 bg-white">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="adminEmptyMsg" class="hidden text-center py-8 text-gray-400 text-xs">कोई भी विज्ञापन उपलब्ध नहीं है।</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= TOAST NOTIFICATION CONTAINER (FIXED & HARDENED) ================= -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 max-w-sm bg-gray-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-24 opacity-0 pointer-events-none">
     <div id="toastIconContainer" class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
@@ -660,94 +924,7 @@
 
   <!-- ================= MAIN SCRIPT ================= -->
   <script>
-    // Initial UP Reseller Seed Products
-    const DEFAULT_PRODUCTS = [
-      {
-        id: "prod-1",
-        title: "Wholesale T-Shirts Lot (50 Pcs Mixed Sizes)",
-        category: "Wholesale / Resale Lots",
-        price: 4999,
-        location: "Kanpur",
-        date: "Today",
-        sellerName: "Gupta Garments",
-        sellerPhone: "9876543210",
-        hideContact: false,
-        timestamp: Date.now() - 3600000,
-        image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80",
-        description: "Fresh premium 180 GSM cotton round neck t-shirts lot. 50 pieces mixed pack with sizes M, L, XL. Ideal for boutique owners & UP resellers. Delivery available across UP."
-      },
-      {
-        id: "prod-2",
-        title: "iPhone 13 - 128 GB Blue (92% Battery Health)",
-        category: "Mobiles & Electronics",
-        price: 36500,
-        location: "Lucknow",
-        date: "Yesterday",
-        sellerName: "Aman Tripathi",
-        sellerPhone: "9988776655",
-        hideContact: true,
-        timestamp: Date.now() - 7200000,
-        image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=600&q=80",
-        description: "Phone is in mint condition with bill, box, and original charging cable. Always used with temper glass and cover. No dents or scratches. Reselling for upgrade."
-      },
-      {
-        id: "prod-3",
-        title: "Sheesham Wood Ergonomic Study Table & Chair",
-        category: "Furniture",
-        price: 3200,
-        location: "Jhansi",
-        date: "2 days ago",
-        sellerName: "Bundelkhand Traders",
-        sellerPhone: "9838112233",
-        hideContact: false,
-        timestamp: Date.now() - 14400000,
-        image: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=600&q=80",
-        description: "Solid Sheesham wood study table with 2 drawers and comfortable back support study chair. Perfect for students preparing for exams in Jhansi."
-      },
-      {
-        id: "prod-4",
-        title: "Hero Splendor Plus (2021 Model) - Single Hand",
-        category: "Vehicles",
-        price: 42000,
-        location: "Agra",
-        date: "Today",
-        sellerName: "Kishore Sharma",
-        sellerPhone: "9450001122",
-        hideContact: true,
-        timestamp: Date.now() - 28800000,
-        image: "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=600&q=80",
-        description: "Single hand driven Hero Splendor i3s. Mileage around 65 km/l. All papers clear (RC, Insurance up to 2026). Genuine buyers only, please deal on chat first."
-      },
-      {
-        id: "prod-5",
-        title: "UPSC & UP-PCS Complete Foundation Book Set (2024)",
-        category: "Books & Education",
-        price: 1800,
-        location: "Prayagraj",
-        date: "3 days ago",
-        sellerName: "Adarsh Singh",
-        sellerPhone: "9123456780",
-        hideContact: false,
-        timestamp: Date.now() - 86400000,
-        image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80",
-        description: "Set of standard books including Laxmikanth Polity, Spectrum Modern History, GC Leong Geography, and Ghatna Chakra UP special. In clean, unhighlighted condition."
-      },
-      {
-        id: "prod-6",
-        title: "Voltas 1.5 Ton 3 Star Inverter Split AC (Under Warranty)",
-        category: "Home Appliances",
-        price: 19500,
-        location: "Varanasi",
-        date: "1 day ago",
-        sellerName: "Kashi Resellers",
-        sellerPhone: "9792003344",
-        hideContact: true,
-        timestamp: Date.now() - 172800000,
-        image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80",
-        description: "1.5 Ton copper coil inverter AC. Only 1 season used, excellent cooling. Free outdoor stand and 3m copper pipes included. Shifting to another flat."
-      }
-    ];
-
+    // Empty state by default (no hardcoded/dummy products)
     let products = [];
     let selectedCategory = 'All';
     let currentViewingProduct = null;
@@ -757,13 +934,112 @@
     let uploadedImageRawFile = null;
     let activeChatUnsubscribe = null;
     let toastTimeout = null;
+    let currentLang = localStorage.getItem('apnabazaar_lang') || 'hi';
 
-    // Seed test chat
-    chatHistories['prod-2'] = [
-      { sender: 'seller', text: 'Namaste! Main Lucknow se hoon. Kya aap iPhone lena chahte hain?', time: '11:15 AM' },
-      { sender: 'user', text: 'Haan bhai, battery health sach me 92% hai?', time: '11:18 AM' },
-      { sender: 'seller', text: 'Ji bilkul original battery hai. Aap kab aakar dekhna chahenge?', time: '11:20 AM' }
+    // Admin Credentials & State
+    const DEFAULT_ADMIN_MOBILE = "8423149429";
+    const DEFAULT_ADMIN_PASS = "erkk@5430";
+    let isAdminLoggedIn = false;
+
+    function getAdminCredentials() {
+      const storedMobile = localStorage.getItem('apna_admin_mobile') || DEFAULT_ADMIN_MOBILE;
+      const storedPass = localStorage.getItem('apna_admin_pass') || DEFAULT_ADMIN_PASS;
+      return { mobile: storedMobile, pass: storedPass };
+    }
+
+    // Bilingual Dictionary
+    const translations = {
+      hi: {
+        admin_btn: "Admin",
+        sell_btn: "Sell",
+        empty_title: "कोई विज्ञापन नहीं मिला",
+        empty_desc: "वर्तमान में कोई विज्ञापन उपलब्ध नहीं है। अपना पहला विज्ञापन पोस्ट करें या फ़िल्टर बदलें।",
+        show_all_ads: "सभी विज्ञापन देखें",
+        post_first_ad: "+ पहला विज्ञापन पोस्ट करें",
+        admin_login_title: "Admin Portal Login",
+        admin_login_subtitle: "प्रशासनिक अनुमतियों के साथ लॉगिन करें",
+        admin_user_label: "Admin ID / Registered Mobile",
+        admin_pass_label: "Password",
+        forgot_password: "Forgot / Change Password?",
+        admin_submit: "लॉगिन करें (Verify & Login)",
+        reset_pass_title: "Reset Admin Password",
+        reset_pass_subtitle: "पंजीकृत मोबाइल नंबर दर्ज करके पासवर्ड बदलें",
+        reg_mobile_label: "Registered Mobile Number *",
+        new_pass_label: "New Password *",
+        save_new_pass: "पासवर्ड अपडेट करें (Save New Password)",
+        admin_panel_title: "Admin Control Panel",
+        change_pass_btn: "Change Pass",
+        logout_btn: "Logout",
+        stat_total_ads: "Total Active Ads",
+        stat_verified: "Verified Ads",
+        stat_districts: "UP Districts",
+        all_listings_mod: "All Listings (Moderation & Delete)"
+      },
+      en: {
+        admin_btn: "Admin",
+        sell_btn: "Sell",
+        empty_title: "No Ads Found",
+        empty_desc: "No listings are currently available. Post your first ad or adjust your search filter.",
+        show_all_ads: "View All Ads",
+        post_first_ad: "+ Post First Ad",
+        admin_login_title: "Admin Portal Login",
+        admin_login_subtitle: "Login with administrative credentials",
+        admin_user_label: "Admin ID / Registered Mobile",
+        admin_pass_label: "Password",
+        forgot_password: "Forgot / Change Password?",
+        admin_submit: "Verify & Login",
+        reset_pass_title: "Reset Admin Password",
+        reset_pass_subtitle: "Enter registered mobile number to reset password",
+        reg_mobile_label: "Registered Mobile Number *",
+        new_pass_label: "New Password *",
+        save_new_pass: "Save New Password",
+        admin_panel_title: "Admin Control Panel",
+        change_pass_btn: "Change Pass",
+        logout_btn: "Logout",
+        stat_total_ads: "Total Active Ads",
+        stat_verified: "Verified Ads",
+        stat_districts: "UP Districts",
+        all_listings_mod: "All Listings (Moderation & Delete)"
+      }
+    };
+
+    function applyLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('apnabazaar_lang', lang);
+      const dict = translations[lang] || translations.hi;
+
+      // Update lang toggle button label
+      const langLabel = document.getElementById('langLabel');
+      if (langLabel) {
+        langLabel.textContent = lang === 'hi' ? 'English' : 'हिंदी';
+      }
+
+      // Update text in elements with data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+          el.textContent = dict[key];
+        }
+      });
+    }
+
+    function toggleLanguage() {
+      const nextLang = currentLang === 'hi' ? 'en' : 'hi';
+      applyLanguage(nextLang);
+      showToast(nextLang === 'hi' ? "भाषा बदलकर हिंदी कर दी गई!" : "Language switched to English!");
+    }
+
+    // Profanity Filter for Ads & Chats
+    const ABUSIVE_PATTERNS = [
+      /\b(bc|mc|bhenchod|madarchod|chutiya|gandu|harami|bhosdi|gaand|lodu|choot|kutta|randi)\b/i,
+      /\b(fuck|shit|bitch|bastard|asshole|dick|pussy)\b/i,
+      /\b(lottery.*winner|free.*money|hack.*account|rummy.*bonus)\b/i
     ];
+
+    function containsProfanity(text) {
+      if (!text) return false;
+      return ABUSIVE_PATTERNS.some(regex => regex.test(text));
+    }
 
     // Safe, Crash-Proof Toast Function
     function showToast(msg, type = "success") {
@@ -808,6 +1084,7 @@
     // App Initialization
     function initApp() {
       loadFallbackProducts();
+      applyLanguage(currentLang);
 
       window.addEventListener('firebase-auth-ready', () => {
         const tag = document.getElementById('backendStatusTag');
@@ -831,10 +1108,10 @@
         try {
           products = JSON.parse(stored);
         } catch (e) {
-          products = [...DEFAULT_PRODUCTS];
+          products = [];
         }
       } else {
-        products = [...DEFAULT_PRODUCTS];
+        products = [];
         saveLocalProducts();
       }
       renderProducts();
@@ -854,7 +1131,7 @@
         if (cloudAds && cloudAds.length > 0) {
           products = cloudAds;
         } else {
-          products = [...DEFAULT_PRODUCTS];
+          products = [];
         }
         saveLocalProducts();
         renderProducts();
@@ -870,6 +1147,8 @@
       const emptyState = document.getElementById('emptyState');
       const countLabel = document.getElementById('listingCount');
 
+      if (!grid) return;
+
       const searchTerm = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
       const locationTerm = document.getElementById('locationFilter')?.value || 'All';
 
@@ -883,16 +1162,18 @@
       });
 
       if (countLabel) {
-        countLabel.textContent = `Showing ${filtered.length} items in UP`;
+        countLabel.textContent = currentLang === 'hi'
+          ? `${filtered.length} विज्ञापन उपलब्ध हैं` 
+          : `Showing ${filtered.length} items in UP`;
       }
 
       if (filtered.length === 0) {
         grid.innerHTML = '';
-        emptyState.classList.remove('hidden');
+        if (emptyState) emptyState.classList.remove('hidden');
         return;
       }
 
-      emptyState.classList.add('hidden');
+      if (emptyState) emptyState.classList.add('hidden');
       grid.innerHTML = filtered.map(p => `
         <div onclick="openProductModal('${p.id}')" class="bg-white rounded-xl border border-gray-200 hover:border-olxTeal hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden group">
           <div class="relative bg-gray-100 h-44 overflow-hidden flex items-center justify-center">
@@ -900,6 +1181,7 @@
             <span class="absolute top-2.5 left-2.5 bg-olxBlue/80 backdrop-blur-xs text-white text-[11px] font-bold px-2 py-0.5 rounded shadow">
               <i class="fa-solid fa-tag text-olxYellow mr-1 text-[10px]"></i>${p.category}
             </span>
+            ${p.isVerified ? '<span class="absolute bottom-2.5 left-2.5 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow"><i class="fa-solid fa-certificate mr-1"></i>Verified</span>' : ''}
             <button onclick="event.stopPropagation(); toggleFavorite(this)" class="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-gray-400 hover:text-red-500 flex items-center justify-center shadow transition-colors">
               <i class="fa-regular fa-heart"></i>
             </button>
@@ -1019,7 +1301,7 @@
       document.getElementById('productModal').classList.add('hidden');
     }
 
-    // Post Ad Handling
+    // Post Ad Handling with Abuse Filter
     function openPostAdModal() {
       document.getElementById('postAdModal').classList.remove('hidden');
     }
@@ -1055,6 +1337,12 @@
       const sellerPhone = document.getElementById('sellerPhone').value.trim();
       const hideContact = document.getElementById('hideContactToggle').checked;
 
+      // Abusive Words Validation
+      if (containsProfanity(title) || containsProfanity(description) || containsProfanity(sellerName)) {
+        showToast("अभद्र या अनुचित शब्दों का प्रयोग वर्जित है। कृपया सही भाषा में विज्ञापन डालें।", "error");
+        return;
+      }
+
       const fallbackImg = uploadedImageBase64 || "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&w=600&q=80";
 
       const newAdPayload = {
@@ -1066,6 +1354,7 @@
         sellerName,
         sellerPhone,
         hideContact,
+        isVerified: false,
         date: "Just Now",
         image: fallbackImg
       };
@@ -1113,7 +1402,7 @@
       }
     }
 
-    // Chat Logic
+    // Chat Logic with Abuse Filter
     function openChatForProduct(product) {
       currentChatProduct = product;
 
@@ -1195,6 +1484,11 @@
       const input = document.getElementById('chatTextInput');
       const text = input.value.trim();
       if (!text || !currentChatProduct) return;
+
+      if (containsProfanity(text)) {
+        showToast("चैट में अभद्र भाषा प्रतिबंधित है।", "error");
+        return;
+      }
 
       input.value = '';
       await appendUserMessage(text);
@@ -1344,6 +1638,142 @@
       return hours + ':' + minutes + ' ' + ampm;
     }
 
+    // ================= ADMIN PORTAL FUNCTIONS =================
+    function openAdminModal() {
+      if (isAdminLoggedIn) {
+        showAdminDashboard();
+      } else {
+        showAdminLoginView();
+      }
+      document.getElementById('adminModal').classList.remove('hidden');
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.add('hidden');
+    }
+
+    function showAdminLoginView() {
+      document.getElementById('adminLoginView').classList.remove('hidden');
+      document.getElementById('adminResetView').classList.add('hidden');
+      document.getElementById('adminDashboardView').classList.add('hidden');
+    }
+
+    function showAdminResetView() {
+      document.getElementById('adminLoginView').classList.add('hidden');
+      document.getElementById('adminResetView').classList.remove('hidden');
+      document.getElementById('adminDashboardView').classList.add('hidden');
+    }
+
+    function showAdminDashboard() {
+      document.getElementById('adminLoginView').classList.add('hidden');
+      document.getElementById('adminResetView').classList.add('hidden');
+      document.getElementById('adminDashboardView').classList.remove('hidden');
+      refreshAdminStats();
+    }
+
+    function handleAdminLogin(e) {
+      if (e) e.preventDefault();
+      const userVal = document.getElementById('adminUserIdInput').value.trim();
+      const passVal = document.getElementById('adminPasswordInput').value.trim();
+
+      const creds = getAdminCredentials();
+
+      if (userVal === creds.mobile && passVal === creds.pass) {
+        isAdminLoggedIn = true;
+        showToast("Admin Login Verified!");
+        showAdminDashboard();
+      } else {
+        showToast("अमान्य Admin ID या पासवर्ड। कृपया पुनः प्रयास करें।", "error");
+      }
+    }
+
+    function handleAdminResetPassword(e) {
+      if (e) e.preventDefault();
+      const inputMobile = document.getElementById('resetMobileInput').value.trim();
+      const newPass = document.getElementById('newPasswordInput').value.trim();
+
+      const creds = getAdminCredentials();
+
+      if (inputMobile === creds.mobile) {
+        localStorage.setItem('apna_admin_pass', newPass);
+        showToast("Admin पासवर्ड सफलतापूर्वक बदल दिया गया!");
+        document.getElementById('resetMobileInput').value = '';
+        document.getElementById('newPasswordInput').value = '';
+        showAdminLoginView();
+      } else {
+        showToast("पंजीकृत मोबाइल नंबर मेल नहीं खाता।", "error");
+      }
+    }
+
+    function handleAdminLogout() {
+      isAdminLoggedIn = false;
+      showToast("Admin Logged Out.");
+      showAdminLoginView();
+    }
+
+    function refreshAdminStats() {
+      document.getElementById('adminTotalAds').textContent = products.length;
+      document.getElementById('adminVerifiedAds').textContent = products.filter(p => p.isVerified).length;
+      
+      const uniqueDistricts = new Set(products.map(p => p.location));
+      document.getElementById('adminActiveDistricts').textContent = uniqueDistricts.size;
+
+      const tbody = document.getElementById('adminAdsTableBody');
+      if (products.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">कोई विज्ञापन मौजूद नहीं है।</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = products.map(p => `
+        <tr class="hover:bg-gray-50 transition">
+          <td class="p-2.5 font-bold text-gray-800">
+            <div class="flex items-center gap-2">
+              <img src="${p.image}" class="w-8 h-8 rounded object-cover border">
+              <span class="truncate max-w-[140px]">${p.title}</span>
+            </div>
+          </td>
+          <td class="p-2.5 font-bold text-olxTeal">₹${Number(p.price).toLocaleString('en-IN')}</td>
+          <td class="p-2.5">${p.sellerName || 'N/A'}<br><span class="text-gray-400 font-mono">${p.sellerPhone}</span></td>
+          <td class="p-2.5">${p.location || 'UP'}</td>
+          <td class="p-2.5 text-right space-x-1 whitespace-nowrap">
+            <button onclick="toggleVerifyAd('${p.id}')" class="px-2 py-1 rounded text-[11px] font-semibold ${p.isVerified ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+              ${p.isVerified ? 'Unverify' : 'Verify'}
+            </button>
+            <button onclick="adminDeleteAd('${p.id}')" class="px-2 py-1 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded text-[11px] font-bold" title="Delete Fake Ad">
+              Delete
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function toggleVerifyAd(id) {
+      const ad = products.find(p => p.id === id);
+      if (ad) {
+        ad.isVerified = !ad.isVerified;
+        saveLocalProducts();
+        renderProducts();
+        refreshAdminStats();
+        showToast(ad.isVerified ? "Ad marked Verified!" : "Verification removed.");
+      }
+    }
+
+    function adminDeleteAd(id) {
+      products = products.filter(p => p.id !== id);
+      saveLocalProducts();
+      renderProducts();
+      refreshAdminStats();
+      showToast("संदिग्ध/फ़ेक विज्ञापन हटा दिया गया।");
+    }
+
+    function confirmClearAllData() {
+      products = [];
+      saveLocalProducts();
+      renderProducts();
+      refreshAdminStats();
+      showToast("सभी विज्ञापन साफ़ कर दिए गए!");
+    }
+
     // Expose helpers to global scope
     window.openPostAdModal = openPostAdModal;
     window.closePostAdModal = closePostAdModal;
@@ -1366,6 +1796,17 @@
     window.toggleFavorite = toggleFavorite;
     window.showToast = showToast;
     window.hideToast = hideToast;
+    window.openAdminModal = openAdminModal;
+    window.closeAdminModal = closeAdminModal;
+    window.showAdminLoginView = showAdminLoginView;
+    window.showAdminResetView = showAdminResetView;
+    window.handleAdminLogin = handleAdminLogin;
+    window.handleAdminResetPassword = handleAdminResetPassword;
+    window.handleAdminLogout = handleAdminLogout;
+    window.toggleVerifyAd = toggleVerifyAd;
+    window.adminDeleteAd = adminDeleteAd;
+    window.confirmClearAllData = confirmClearAllData;
+    window.toggleLanguage = toggleLanguage;
 
     window.onload = function() {
       initApp();
