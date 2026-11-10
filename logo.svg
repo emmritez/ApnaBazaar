@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 160" width="680" height="160">
+  <defs>
+    <!-- Teal Bag Gradient -->
+    <linearGradient id="hBagGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00b4ae"/>
+      <stop offset="100%" stop-color="#006c68"/>
+    </linearGradient>
+
+    <!-- Gold Pin Gradient -->
+    <linearGradient id="hPinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffce32"/>
+      <stop offset="100%" stop-color="#e89800"/>
+    </linearGradient>
+
+    <filter id="hDrop" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#002f34" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- ICON EMBLEM ON LEFT -->
+  <g transform="translate(15, 12)">
+    <!-- Bag Handle -->
+    <path d="M 52 48 C 52 24 100 24 100 48" fill="none" stroke="#009691" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="52" cy="50" r="5" fill="#003d3a"/>
+    <circle cx="100" cy="50" r="5" fill="#003d3a"/>
+
+    <!-- Bag Body -->
+    <g filter="url(#hDrop)">
+      <path d="M 36 52 L 116 52 Q 120 52 122 56 L 140 126 Q 142 134 133 134 L 19 134 Q 10 134 12 126 L 30 56 Q 32 52 36 52 Z" fill="url(#hBagGrad)"/>
+      <path d="M 76 52 L 116 52 Q 120 52 122 56 L 140 126 Q 142 134 133 134 L 76 134 Z" fill="#000000" opacity="0.14"/>
+    </g>
+
+    <!-- Location Pin & Tag -->
+    <path d="M 76 64 C 58 64 44 78 44 96 C 44 118 76 142 76 142 C 76 142 108 118 108 96 C 108 78 94 64 76 64 Z" fill="url(#hPinGrad)"/>
+    <path d="M 76 64 C 94 64 108 78 108 96 C 108 118 76 142 76 142 Z" fill="#cc7e00" opacity="0.35"/>
+    <circle cx="76" cy="94" r="13" fill="#002f34"/>
+
+    <!-- Resale Tag -->
+    <g transform="translate(94, 76) rotate(35)">
+      <rect x="0" y="0" width="24" height="16" rx="3.5" fill="#ffffff" filter="url(#hDrop)"/>
+      <circle cx="5" cy="8" r="2.5" fill="#e89800"/>
+      <path d="M 11 5 L 20 5 M 11 8 L 18 8 M 11 11 L 16 11" stroke="#009691" stroke-width="1.8" stroke-linecap="round"/>
+    </g>
+
+    <!-- Motion Swoosh -->
+    <path d="M 12 122 Q 28 140 68 136" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" opacity="0.9"/>
+  </g>
+
+  <!-- BRAND TYPOGRAPHY -->
+  <g transform="translate(180, 0)">
+    <!-- Main ApnaBazaar Wordmark -->
+    <text x="0" y="94" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="64" letter-spacing="-1.5">
+      <tspan fill="#002f34">Apna</tspan><tspan fill="#00a49f">Bazaar</tspan>
+    </text>
+
+    <!-- UP Speech Badge -->
+    <g transform="translate(378, 38)">
+      <path d="M 8 0 L 48 0 A 8 8 0 0 1 56 8 L 56 26 A 8 8 0 0 1 48 34 L 20 34 L 10 42 L 10 34 A 8 8 0 0 1 2 26 L 2 8 A 8 8 0 0 1 8 0 Z" fill="#e89800"/>
+      <text x="28" y="24" font-family="'Inter', sans-serif" font-weight="900" font-size="19" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">UP</text>
+    </g>
+
+    <!-- Tagline: Uttar Pradesh Reseller Marketplace -->
+    <text x="5" y="128" font-family="'Inter', sans-serif" font-weight="600" font-size="16" fill="#64748b" letter-spacing="6">
+      UTTAR PRADESH
+    </text>
+  </g>
+</svg>
