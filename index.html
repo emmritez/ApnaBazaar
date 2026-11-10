@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ApnaBazaar - Jhansi Ka Apna OLX</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Roboto',sans-serif}
+body{background:#f2f4f5}
+.header{background:#fff;padding:12px 5%;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px #0001;position:sticky;top:0;z-index:20}
+.logo{font-size:28px;font-weight:900;color:#002f34} .logo span{background:#ffce32;padding:2px 8px;border-radius:4px;margin-left:4px}
+.search-bar{flex:1;margin:0 20px;display:flex}
+.search-bar input{flex:1;padding:12px;border:2px solid #002f34;border-radius:4px 0 0 4px;outline:none}
+.search-bar button{padding:12px 20px;background:#002f34;color:#fff;border:none;border-radius:0 4px 4px 0;cursor:pointer}
+.btn-sell{background:#fff;color:#002f34;border:5px solid;border-top-color:#3a77ff;border-right-color:#ffce32;border-bottom-color:#23e5db;border-left-color:#ffce32;border-radius:30px;padding:8px 22px;font-weight:700;cursor:pointer}
+.cat-bar{background:#fff;padding:10px 5%;display:flex;gap:18px;overflow-x:auto;white-space:nowrap;font-size:14px}
+.cat-bar span{background:#f2f4f5;padding:6px 12px;border-radius:20px;cursor:pointer}
+.cat-bar span.active{background:#002f34;color:#fff}
+.container{padding:20px 5%}
+.banner{background:linear-gradient(90deg,#002f34,#014d54);color:#fff;padding:25px;border-radius:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:20px}
+.card{background:#fff;border-radius:6px;overflow:hidden;border:1px solid #ddd;cursor:pointer;transition:.2s}
+.card:hover{transform:translateY(-3px)}
+.card img{width:100%;height:180px;object-fit:cover;background:#eee}
+.card-body{padding:10px}
+.price{font-weight:700;font-size:18px;color:#002f34}
+.form-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:#0008;z-index:50;display:none;justify-content:center;align-items:center;padding:20px}
+.form-overlay.active{display:flex}
+.form-box{background:#fff;width:100%;max-width:500px;padding:20px;border-radius:8px;max-height:90vh;overflow:auto}
+.form-box input,.form-box select,.form-box textarea{width:100%;padding:12px;margin:8px 0;border:1px solid #ccc;border-radius:4px}
+.btn{width:100%;padding:12px;background:#002f34;color:#fff;border:none;border-radius:4px;font-weight:700;margin-top:10px;cursor:pointer}
+#detail{position:fixed;top:0;left:0;width:100%;height:100%;background:#fff;z-index:100;display:none;overflow:auto}
+#detail.active{display:block}
+</style>
+</head>
+<body>
+<div class="header">
+<div class="logo">Apna<span>Bazaar</span></div>
+<div class="search-bar"><input id="searchInput" placeholder="Jhansi me khoje - Mobile, Bike..."><button onclick="doSearch()">Search</button></div>
+<button class="btn-sell" onclick="openForm()">+ SELL</button>
+</div>
+<div class="cat-bar" id="catBar">
+<span class="active" onclick="filterCat('All',this)">All</span>
+<span onclick="filterCat('Mobile',this)">Mobile</span>
+<span onclick="filterCat('Bike',this)">Bike</span>
+<span onclick="filterCat('Car',this)">Car</span>
+<span onclick="filterCat('Furniture',this)">Furniture</span>
+<span onclick="filterCat('Jobs',this)">Jobs</span>
+<span onclick="filterCat('Books',this)">Books</span>
+</div>
+<div class="container">
+<div class="banner"><h1>ApnaBazaar - Jhansi Ka Apna Bazaar</h1><p>Buy & Sell Anything Free • Firebase Live</p></div>
+<div class="grid" id="adGrid"><p>Loading ads...</p></div>
+</div>
+<div class="form-overlay" id="formOverlay">
+<div class="form-box">
+<h2>ApnaBazaar Par Becho</h2>
+<input id="fTitle" placeholder="Title * Ex: iPhone 12">
+<select id="fCat"><option>Mobile</option><option>Bike</option><option>Car</option><option>Furniture</option><option>Jobs</option><option>Books</option></select>
+<input id="fPrice" type="number" placeholder="Price ₹ *">
+<input id="fLoc" placeholder="Location * Ex: Panchwati, Jhansi">
+<input id="fImg" placeholder="Image URL https://...">
+<textarea id="fDesc" placeholder="Description"></textarea>
+<input id="fPhone" placeholder="WhatsApp No. 10 digit *">
+<button class="btn" onclick="postAd()">Post Ad</button>
+<button class="btn" style="background:#ccc;color:#000" onclick="closeForm()">Cancel</button>
+</div>
+</div>
+<div id="detail"><div style="padding:20px 5%"><span onclick="closeDetail()" style="font-size:22px;cursor:pointer;font-weight:700">← Back to ApnaBazaar</span><div id="detailContent" style="margin-top:20px"></div></div></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyBYn8QZ0zaLnq8WvFpkpghhCizlOv8ZD2g",
+  authDomain: "apnabazaar-in.firebaseapp.com",
+  projectId: "apnabazaar-in",
+  storageBucket: "apnabazaar-in.firebasestorage.app",
+  messagingSenderId: "587588217089",
+  appId: "1:587588217089:web:673dacf7f4707d7a64d300",
+  measurementId: "G-S3XXK0EYZQ"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+let allAds = [];
+async function loadAds(){
+try{
+const q = query(collection(db,"apnaBazaar_ads"), orderBy("createdAt","desc"));
+const snap = await getDocs(q);
+allAds = [];
+snap.forEach(d=>{allAds.push({id:d.id, ...d.data()})});
+render(allAds);
+}catch(e){
+document.getElementById('adGrid').innerHTML = '<p style="color:red">Firestore Database banana baki hai! Firebase > Build > Firestore Database > Create in Test Mode karo.</p>';
+}
+}
+loadAds();
+window.render = (list)=>{
+const grid=document.getElementById('adGrid');
+if(list.length==0){grid.innerHTML='<p>Abhi koi ad nahi hai, pehla ad aap post karo +SELL se!</p>';return}
+grid.innerHTML='';
+list.forEach(a=>{
+grid.innerHTML+=`<div class="card" onclick="openDetail('${a.id}')"><img src="${a.img||'https://via.placeholder.com/300?text=ApnaBazaar'}"><div class="card-body"><div class="price">₹ ${a.price}</div><div style="font-size:14px;height:34px;overflow:hidden">${a.title}</div><div style="font-size:11px;color:#666">${a.cat} • ${a.loc}</div></div></div>`;
+});
+}
+window.postAd = async ()=>{
+const ad={
+title:document.getElementById('fTitle').value.trim(),
+cat:document.getElementById('fCat').value,
+price:document.getElementById('fPrice').value,
+loc:document.getElementById('fLoc').value.trim(),
+img:document.getElementById('fImg').value.trim(),
+desc:document.getElementById('fDesc').value.trim(),
+phone:document.getElementById('fPhone').value.trim(),
+createdAt: serverTimestamp()
+};
+if(!ad.title||!ad.price||!ad.loc||!ad.phone){alert('Title, Price, Location, Phone jaruri hai');return}
+try{
+await addDoc(collection(db,"apnaBazaar_ads"), ad);
+alert('Ad Posted! ApnaBazaar par live ho gaya');
+closeForm();
+loadAds();
+}catch(e){alert('Error: '+e.message);}
+}
+window.openForm=()=>document.getElementById('formOverlay').classList.add('active');
+window.closeForm=()=>document.getElementById('formOverlay').classList.remove('active');
+window.doSearch=()=>{
+let q=document.getElementById('searchInput').value.toLowerCase();
+render(allAds.filter(a=>a.title.toLowerCase().includes(q)||a.cat.toLowerCase().includes(q)||a.loc.toLowerCase().includes(q)));
+}
+window.filterCat=(c,el)=>{
+document.querySelectorAll('.cat-bar span').forEach(s=>s.classList.remove('active'));
+el.classList.add('active');
+if(c=='All')render(allAds);else render(allAds.filter(a=>a.cat==c));
+}
+window.openDetail=(id)=>{
+let a=allAds.find(x=>x.id==id);
+if(!a) return;
+document.getElementById('detailContent').innerHTML=`<img src="${a.img||'https://via.placeholder.com/500'}" style="width:100%;max-width:500px;border-radius:8px"><h1 style="margin:15px 0">${a.title}</h1><h2>₹ ${a.price}</h2><p><b>${a.cat}</b> | ${a.loc}</p><p style="margin:12px 0">${a.desc||''}</p><a href="https://wa.me/91${a.phone}" target="_blank" style="display:inline-block;padding:12px 22px;background:#25D366;color:#fff;text-decoration:none;border-radius:6px;font-weight:700">WhatsApp Par Baat Karo</a>`;
+document.getElementById('detail').classList.add('active');
+}
+window.closeDetail=()=>document.getElementById('detail').classList.remove('active');
+</script>
+</body>
+</html>
