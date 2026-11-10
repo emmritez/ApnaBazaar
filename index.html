@@ -1,73 +1,1308 @@
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResellUP - Uttar Pradesh Reseller Classifieds</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-// Aapka Firebase Config (Project Settings se copy kiya hua)
-const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "apnabazaar-in.firebaseapp.com",
-  projectId: "apnabazaar-in",
-  storageBucket: "apnabazaar-in.appspot.com",
-  messagingSenderId: "...",
-  appId: "..."
-};
+  <!-- Firebase Modular SDK Imports -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { 
+      getAuth, 
+      signInAnonymously, 
+      signInWithCustomToken, 
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      addDoc, 
+      setDoc, 
+      getDocs, 
+      onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { 
+      getStorage, 
+      ref as storageRef, 
+      uploadBytes, 
+      getDownloadURL, 
+      uploadString 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+    // Application Environment & Firebase Initialization
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'resellup-up-classifieds';
+    
+    // User can customize or supply their config; fallback to environment or demo mode
+    let firebaseConfig = null;
+    if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+      try {
+        firebaseConfig = JSON.parse(__firebase_config);
+      } catch (err) {
+        console.warn("Could not parse __firebase_config:", err);
+      }
+    }
 
-const adsGrid = document.getElementById('adsGrid');
-const postModal = document.getElementById('postModal');
+    let app = null;
+    let db = null;
+    let auth = null;
+    let storage = null;
+    let currentUser = null;
+    let isFirebaseReady = false;
 
-document.getElementById('sellBtn').onclick = () => postModal.classList.remove('hidden');
-document.getElementById('closeModal').onclick = () => postModal.classList.add('hidden');
+    if (firebaseConfig && firebaseConfig.apiKey && firebaseConfig.apiKey !== 'YOUR_API_KEY') {
+      try {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        try {
+          storage = getStorage(app);
+        } catch (sErr) {
+          console.warn("Storage not enabled, using local image URLs", sErr);
+        }
 
-async function loadAds() {
-  try {
-    const snap = await getDocs(collection(db, "apnaBazaar_ads"));
-    adsGrid.innerHTML = "";
-    if(snap.empty){
-      adsGrid.innerHTML = "<p class='col-span-full text-center'>Koi ad nahi, pehla ad aap post karo!</p>";
+        // Authenticate as per guidelines
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          signInWithCustomToken(auth, __initial_auth_token).catch(() => signInAnonymously(auth));
+        } else {
+          signInAnonymously(auth);
+        }
+
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            currentUser = user;
+            window.currentUserId = user.uid;
+            isFirebaseReady = true;
+            window.dispatchEvent(new CustomEvent('firebase-auth-ready', { detail: { user } }));
+          }
+        });
+      } catch (err) {
+        console.error("Firebase init failed, running with offline/local state:", err);
+      }
+    }
+
+    // Expose helpers globally to main app
+    window.ResellFirebase = {
+      appId,
+      db,
+      auth,
+      storage,
+      isFirebaseReady: () => isFirebaseReady,
+      getUser: () => currentUser,
+      
+      // Save Ad with Firestore Public Collection
+      async postAd(adPayload, imageBase64OrFile) {
+        let imageUrl = adPayload.image;
+
+        // Try Firebase Storage if active and file given
+        if (storage && imageBase64OrFile && typeof imageBase64OrFile !== 'string') {
+          try {
+            const fileRef = storageRef(storage, `artifacts/${appId}/public/ads/${Date.now()}_${imageBase64OrFile.name}`);
+            const snapshot = await uploadBytes(fileRef, imageBase64OrFile);
+            imageUrl = await getDownloadURL(snapshot.ref);
+          } catch (e) {
+            console.warn("Storage upload failed, keeping base64/fallback", e);
+          }
+        }
+
+        const cleanAd = {
+          ...adPayload,
+          image: imageUrl,
+          userId: currentUser?.uid || 'guest-user',
+          timestamp: Date.now()
+        };
+
+        if (db && currentUser) {
+          try {
+            // Rule 1: Use strict path /artifacts/{appId}/public/data/{collectionName}
+            const adsCol = collection(db, 'artifacts', appId, 'public', 'data', 'ads');
+            const docRef = await addDoc(adsCol, cleanAd);
+            cleanAd.id = docRef.id;
+            return cleanAd;
+          } catch (err) {
+            console.error("Firestore post ad error:", err);
+          }
+        }
+
+        return cleanAd;
+      },
+
+      // Subscribe to Realtime Ads
+      subscribeAds(onAdsUpdated, onError) {
+        if (!db || !currentUser) {
+          return null; // fallback to localStorage in main code
+        }
+        try {
+          // Rule 1 & Rule 2: Simple collection query without compound orderBy
+          const adsCol = collection(db, 'artifacts', appId, 'public', 'data', 'ads');
+          return onSnapshot(adsCol, (snapshot) => {
+            const list = [];
+            snapshot.forEach((d) => list.push({ id: d.id, ...d.data() }));
+            // Memory sort
+            list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            onAdsUpdated(list);
+          }, (err) => {
+            console.warn("Ads snapshot error:", err);
+            if (onError) onError(err);
+          });
+        } catch (err) {
+          console.warn("Subscribe ads exception:", err);
+          return null;
+        }
+      },
+
+      // Realtime Deal Chat Message Posting
+      async sendChatMessage(adId, messagePayload) {
+        if (db && currentUser) {
+          try {
+            const chatCol = collection(db, 'artifacts', appId, 'public', 'data', `chat_${adId}`);
+            await addDoc(chatCol, {
+              ...messagePayload,
+              timestamp: Date.now(),
+              senderUid: currentUser.uid
+            });
+            return true;
+          } catch (e) {
+            console.error("Firestore chat error:", e);
+          }
+        }
+        return false;
+      },
+
+      // Realtime Deal Chat Listener
+      subscribeChat(adId, onMessages, onError) {
+        if (!db || !currentUser) return null;
+        try {
+          const chatCol = collection(db, 'artifacts', appId, 'public', 'data', `chat_${adId}`);
+          return onSnapshot(chatCol, (snapshot) => {
+            const messages = [];
+            snapshot.forEach((d) => messages.push({ id: d.id, ...d.data() }));
+            messages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+            onMessages(messages);
+          }, (err) => {
+            console.warn("Chat listener error:", err);
+            if (onError) onError(err);
+          });
+        } catch (e) {
+          console.warn("Subscribe chat exception:", e);
+          return null;
+        }
+      }
+    };
+  </script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            olxBlue: '#002f34',
+            olxTeal: '#00a49f',
+            olxYellow: '#ffce32',
+            olxLightBg: '#f2f4f5'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-[#f7f8f9] text-[#002f34] font-sans min-h-screen flex flex-col antialiased">
+
+  <!-- ================= TOP HEADER ================= -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-2 cursor-pointer" onclick="resetFilters()">
+        <div class="w-10 h-10 rounded-xl bg-olxBlue flex items-center justify-center text-white text-xl font-black tracking-tight shadow-md">
+          UP
+        </div>
+        <div class="leading-tight">
+          <span class="text-xl sm:text-2xl font-black tracking-tight text-olxBlue">Resell<span class="text-olxTeal">UP</span></span>
+          <span class="hidden sm:inline-block text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded ml-1 uppercase">Uttar Pradesh</span>
+        </div>
+      </div>
+
+      <!-- UP District / Location Selector -->
+      <div class="relative min-w-[140px] sm:min-w-[190px] hidden md:block">
+        <div class="flex items-center border-2 border-olxBlue rounded-md px-3 py-2 bg-white hover:border-olxTeal transition-colors">
+          <i class="fa-solid fa-location-dot text-olxBlue mr-2 text-sm"></i>
+          <select id="locationFilter" onchange="filterProducts()" class="w-full bg-transparent text-sm font-semibold text-olxBlue outline-none cursor-pointer">
+            <option value="All">All Uttar Pradesh</option>
+            <option value="Jhansi">Jhansi</option>
+            <option value="Lucknow">Lucknow</option>
+            <option value="Kanpur">Kanpur</option>
+            <option value="Varanasi">Varanasi</option>
+            <option value="Agra">Agra</option>
+            <option value="Prayagraj">Prayagraj</option>
+            <option value="Meerut">Meerut</option>
+            <option value="Noida">Noida</option>
+            <option value="Ghaziabad">Ghaziabad</option>
+            <option value="Bareilly">Bareilly</option>
+            <option value="Gorakhpur">Gorakhpur</option>
+            <option value="Aligarh">Aligarh</option>
+            <option value="Ayodhya">Ayodhya</option>
+            <option value="Mathura">Mathura</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="flex-1 max-w-xl relative">
+        <div class="flex items-center border-2 border-olxBlue rounded-md overflow-hidden bg-white focus-within:border-olxTeal">
+          <input 
+            type="text" 
+            id="searchInput" 
+            onkeyup="filterProducts()"
+            placeholder="Search resale lots, mobiles, bikes across UP..." 
+            class="w-full px-3 sm:px-4 py-2 text-sm sm:text-base outline-none text-olxBlue"
+          />
+          <button class="bg-olxBlue text-white px-4 py-2 hover:bg-[#003c42] transition-colors">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Actions: Chats & Post Ad Button -->
+      <div class="flex items-center gap-2 sm:gap-4">
+        <!-- Live Firebase Status Indicator -->
+        <div id="backendStatusTag" class="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full border border-gray-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="backendStatusText">Live Cloud Sync</span>
+        </div>
+
+        <!-- Chat Inbox Button -->
+        <button onclick="openChatListModal()" class="relative p-2.5 text-olxBlue hover:text-olxTeal transition-colors" title="My Chats">
+          <i class="fa-regular fa-comment-dots text-2xl"></i>
+          <span id="unreadBadge" class="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">1</span>
+        </button>
+
+        <!-- Post Ad Button (OLX Style) -->
+        <button 
+          onclick="openPostAdModal()" 
+          class="relative inline-flex items-center justify-center px-4 sm:px-6 py-2 font-bold text-sm sm:text-base uppercase tracking-wider text-olxBlue bg-olxYellow border-4 border-olxTeal rounded-full shadow hover:bg-yellow-400 active:scale-95 transition-all">
+          <i class="fa-solid fa-plus mr-1.5 font-black"></i>
+          <span>Sell</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Mobile Location Selector Row -->
+    <div class="md:hidden px-4 pb-2.5 pt-0.5">
+      <div class="flex items-center border border-gray-300 rounded px-2.5 py-1.5 bg-gray-50 text-xs font-medium">
+        <i class="fa-solid fa-map-pin text-olxTeal mr-2"></i>
+        <select id="mobileLocationFilter" onchange="syncLocation(this.value)" class="w-full bg-transparent outline-none">
+          <option value="All">All Uttar Pradesh</option>
+          <option value="Jhansi">Jhansi</option>
+          <option value="Lucknow">Lucknow</option>
+          <option value="Kanpur">Kanpur</option>
+          <option value="Varanasi">Varanasi</option>
+          <option value="Agra">Agra</option>
+          <option value="Prayagraj">Prayagraj</option>
+          <option value="Meerut">Meerut</option>
+          <option value="Noida">Noida</option>
+          <option value="Ghaziabad">Ghaziabad</option>
+          <option value="Bareilly">Bareilly</option>
+          <option value="Gorakhpur">Gorakhpur</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= CATEGORIES BAR ================= -->
+  <nav class="bg-white border-b border-gray-200 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 overflow-x-auto flex items-center gap-3 sm:gap-6 text-xs sm:text-sm whitespace-nowrap">
+      <button onclick="selectCategory('All')" class="cat-pill font-bold text-olxBlue hover:text-olxTeal px-2 py-1 rounded bg-gray-100" data-cat="All">All Categories</button>
+      <button onclick="selectCategory('Wholesale / Resale Lots')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium" data-cat="Wholesale / Resale Lots"><i class="fa-solid fa-boxes-stacked mr-1 text-olxTeal"></i> Wholesale Lots</button>
+      <button onclick="selectCategory('Mobiles & Electronics')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium" data-cat="Mobiles & Electronics"><i class="fa-solid fa-mobile-screen-button mr-1 text-blue-600"></i> Electronics</button>
+      <button onclick="selectCategory('Vehicles')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium" data-cat="Vehicles"><i class="fa-solid fa-motorcycle mr-1 text-red-500"></i> Vehicles</button>
+      <button onclick="selectCategory('Fashion & Clothing')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium" data-cat="Fashion & Clothing"><i class="fa-solid fa-shirt mr-1 text-purple-600"></i> Fashion</button>
+      <button onclick="selectCategory('Furniture')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium" data-cat="Furniture"><i class="fa-solid fa-couch mr-1 text-amber-700"></i> Furniture</button>
+      <button onclick="selectCategory('Books & Education')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium" data-cat="Books & Education"><i class="fa-solid fa-book-open mr-1 text-emerald-600"></i> Books & Study</button>
+      <button onclick="selectCategory('Home Appliances')" class="cat-pill text-gray-700 hover:text-olxTeal font-medium" data-cat="Home Appliances"><i class="fa-solid fa-blender mr-1 text-cyan-700"></i> Appliances</button>
+    </div>
+  </nav>
+
+  <!-- ================= HERO NOTICE BANNER ================= -->
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+    <div class="bg-gradient-to-r from-olxBlue via-[#00474e] to-olxTeal text-white rounded-xl p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="bg-olxYellow text-olxBlue text-[11px] font-black uppercase px-2 py-0.5 rounded">Reseller Hub UP</span>
+          <span class="text-xs text-gray-200"><i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> Private & Safe Reselling</span>
+        </div>
+        <h1 class="text-lg sm:text-2xl font-bold">उत्तर प्रदेश में रीसेलर्स का अपना बाज़ार</h1>
+        <p class="text-xs sm:text-sm text-gray-200 mt-0.5">बिना फोन नंबर दिखाए भी सुरक्षित इन-ऐप चैट से अपनी डील फाइनल करें।</p>
+      </div>
+      <button onclick="openPostAdModal()" class="w-full md:w-auto bg-white text-olxBlue hover:bg-gray-100 font-bold px-5 py-2.5 rounded-lg text-sm transition-all shadow flex items-center justify-center gap-2">
+        <i class="fa-solid fa-camera text-olxTeal"></i>
+        <span>अभी मुफ़्त विज्ञापन पोस्ट करें</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ================= MAIN LISTINGS FEED ================= -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1">
+    <!-- Filter status & count bar -->
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <h2 class="text-lg sm:text-xl font-bold text-olxBlue">Fresh Recommendations</h2>
+        <span id="activeFilterBadge" class="hidden text-xs bg-teal-100 text-teal-800 font-medium px-2 py-0.5 rounded-full"></span>
+      </div>
+      <p id="listingCount" class="text-xs sm:text-sm text-gray-500 font-medium">Showing 6 items</p>
+    </div>
+
+    <!-- Products Grid -->
+    <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <!-- Items dynamically populated via JavaScript -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden text-center py-16 bg-white rounded-xl border border-gray-200 mt-4">
+      <i class="fa-regular fa-folder-open text-5xl text-gray-300 mb-3"></i>
+      <h3 class="text-lg font-bold text-gray-700">कोई विज्ञापन नहीं मिला</h3>
+      <p class="text-sm text-gray-500 max-w-md mx-auto mt-1">आपके चुने हुए फ़िल्टर या शहर में कोई विज्ञापन उपलब्ध नहीं है। कृपया दूसरा शहर चुनें या नया विज्ञापन पोस्ट करें।</p>
+      <button onclick="resetFilters()" class="mt-4 px-4 py-2 bg-olxBlue text-white text-sm font-semibold rounded-md">सभी विज्ञापन देखें</button>
+    </div>
+  </main>
+
+  <!-- ================= PRODUCT DETAILS MODAL ================= -->
+  <div id="productModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative animate-fadeIn">
+      <!-- Close Button -->
+      <button onclick="closeProductModal()" class="absolute top-3 right-3 z-10 w-9 h-9 bg-black/50 hover:bg-black/75 text-white rounded-full flex items-center justify-center transition-colors">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-0">
+        <!-- Image Preview Section -->
+        <div class="bg-gray-100 flex items-center justify-center p-4 min-h-[280px] md:min-h-[420px] rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none relative">
+          <img id="modalProductImg" src="" alt="Product" class="max-h-[360px] w-full object-contain rounded-lg">
+          <span id="modalCategoryTag" class="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-olxBlue font-bold text-xs px-2.5 py-1 rounded shadow-xs"></span>
+        </div>
+
+        <!-- Details Section -->
+        <div class="p-5 sm:p-6 flex flex-col justify-between">
+          <div>
+            <div class="flex items-baseline justify-between mb-1">
+              <span id="modalProductPrice" class="text-2xl sm:text-3xl font-black text-olxBlue"></span>
+              <span id="modalProductDate" class="text-xs text-gray-400"></span>
+            </div>
+
+            <h2 id="modalProductTitle" class="text-lg sm:text-xl font-bold text-gray-800 leading-snug mb-3"></h2>
+
+            <div class="flex items-center text-xs sm:text-sm text-gray-600 mb-4 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+              <i class="fa-solid fa-location-dot text-red-500 mr-2 text-base"></i>
+              <span id="modalProductLocation" class="font-medium"></span>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-5">
+              <h3 class="text-xs font-bold uppercase text-gray-400 tracking-wider mb-1.5">विवरण (Description)</h3>
+              <p id="modalProductDesc" class="text-sm text-gray-700 leading-relaxed max-h-36 overflow-y-auto whitespace-pre-line bg-gray-50/50 p-3 rounded-lg border border-gray-100"></p>
+            </div>
+          </div>
+
+          <!-- Seller Info & Privacy Features -->
+          <div class="border-t border-gray-200 pt-4">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-11 h-11 rounded-full bg-teal-100 text-olxTeal flex items-center justify-center text-lg font-bold uppercase">
+                <span id="modalSellerInitial">S</span>
+              </div>
+              <div class="flex-1">
+                <h4 id="modalSellerName" class="font-bold text-gray-900 text-sm"></h4>
+                <p class="text-xs text-emerald-600 font-medium"><i class="fa-solid fa-circle-check mr-1"></i> Verified UP Reseller</p>
+              </div>
+            </div>
+
+            <!-- Contact Number Block (Privacy Driven) -->
+            <div id="contactDetailsContainer" class="mb-3">
+              <!-- Rendered via JS based on hideContact toggle -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-1 gap-2">
+              <button 
+                id="modalChatBtn"
+                class="w-full bg-olxBlue hover:bg-[#003e45] text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-98 shadow-md">
+                <i class="fa-solid fa-comments text-olxYellow text-lg"></i>
+                <span>Chat with Seller (डील फाइनल करें)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SELL / POST AD MODAL ================= -->
+  <div id="postAdModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative p-5 sm:p-7">
+      <!-- Close Button -->
+      <button onclick="closePostAdModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      <div class="mb-5">
+        <h2 class="text-xl sm:text-2xl font-black text-olxBlue">अपना विज्ञापन पोस्ट करें</h2>
+        <p class="text-xs sm:text-sm text-gray-500">उत्तर प्रदेश के रीसेलर्स और खरीदारों को अपना सामान तुरंत बेचें।</p>
+      </div>
+
+      <form id="postAdForm" onsubmit="handlePostAd(event)" class="space-y-4">
+        <!-- Title -->
+        <div>
+          <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Ad Title *</label>
+          <input type="text" id="adTitle" required placeholder="e.g. iPhone 13 128GB or T-shirt wholesale lot" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-olxTeal focus:ring-1 focus:ring-olxTeal outline-none">
+        </div>
+
+        <!-- Category & Location -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Category *</label>
+            <select id="adCategory" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-olxTeal outline-none bg-white">
+              <option value="Wholesale / Resale Lots">Wholesale / Resale Lots</option>
+              <option value="Mobiles & Electronics">Mobiles & Electronics</option>
+              <option value="Vehicles">Vehicles</option>
+              <option value="Fashion & Clothing">Fashion & Clothing</option>
+              <option value="Furniture">Furniture</option>
+              <option value="Books & Education">Books & Education</option>
+              <option value="Home Appliances">Home Appliances</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 uppercase mb-1">UP District / City *</label>
+            <select id="adLocation" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-olxTeal outline-none bg-white">
+              <option value="Jhansi">Jhansi</option>
+              <option value="Lucknow">Lucknow</option>
+              <option value="Kanpur">Kanpur</option>
+              <option value="Varanasi">Varanasi</option>
+              <option value="Agra">Agra</option>
+              <option value="Prayagraj">Prayagraj</option>
+              <option value="Meerut">Meerut</option>
+              <option value="Noida">Noida</option>
+              <option value="Ghaziabad">Ghaziabad</option>
+              <option value="Bareilly">Bareilly</option>
+              <option value="Gorakhpur">Gorakhpur</option>
+              <option value="Aligarh">Aligarh</option>
+              <option value="Ayodhya">Ayodhya</option>
+              <option value="Mathura">Mathura</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Price -->
+        <div>
+          <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Set Price (₹ INR) *</label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-2 text-gray-500 font-bold">₹</span>
+            <input type="number" id="adPrice" min="1" required placeholder="5000" class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-olxTeal outline-none">
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Description *</label>
+          <textarea id="adDescription" rows="3" required placeholder="Describe condition, reason for selling, quantity available, warranty if any..." class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:border-olxTeal outline-none"></textarea>
+        </div>
+
+        <!-- Photo Upload from Local Storage / Device -->
+        <div class="border-2 border-dashed border-gray-300 hover:border-olxTeal rounded-xl p-4 text-center cursor-pointer bg-gray-50 transition-colors relative">
+          <input type="file" id="adImageInput" accept="image/*" onchange="handleImagePreview(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+          <div id="imageUploadPlaceholder" class="flex flex-col items-center">
+            <i class="fa-solid fa-cloud-arrow-up text-3xl text-olxTeal mb-1"></i>
+            <span class="text-sm font-semibold text-gray-700">डिवाइस से फ़ोटो अपलोड करें</span>
+            <span class="text-xs text-gray-400">PNG, JPG, JPEG (Local Storage Preview)</span>
+          </div>
+          <!-- Preview container -->
+          <div id="imagePreviewContainer" class="hidden relative inline-block mt-1">
+            <img id="previewImgTag" src="" alt="Preview" class="h-28 w-28 object-cover rounded-lg border shadow-sm">
+            <span class="block text-xs text-emerald-600 font-bold mt-1">फ़ोटो सेलेक्ट हो गई (बदलने के लिए फिर से क्लिक करें)</span>
+          </div>
+        </div>
+
+        <!-- Seller Profile & Contact Privacy Feature -->
+        <div class="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-3">
+          <h3 class="text-xs font-bold uppercase text-gray-600 tracking-wider">विक्रेता जानकारी (Seller Profile)</h3>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-600 mb-0.5">Your Name *</label>
+              <input type="text" id="sellerName" required placeholder="e.g. Ramesh Verma" class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs sm:text-sm bg-white outline-none">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-0.5">Mobile Number *</label>
+              <input type="tel" id="sellerPhone" required pattern="[0-9]{10}" placeholder="10 Digit Number" class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs sm:text-sm bg-white outline-none">
+            </div>
+          </div>
+
+          <!-- Privacy Checkbox / Toggle -->
+          <div class="flex items-start gap-2.5 pt-1">
+            <input type="checkbox" id="hideContactToggle" class="w-4 h-4 mt-0.5 text-olxTeal rounded border-gray-300 focus:ring-olxTeal cursor-pointer">
+            <label for="hideContactToggle" class="text-xs text-gray-700 cursor-pointer">
+              <strong class="text-olxBlue font-bold">मेरा फोन नंबर विज्ञापन में छिपाएं (Hide Contact Details)</strong>
+              <p class="text-gray-500 text-[11px] leading-tight mt-0.5">खरीदार केवल इंटर-पर्सनल चैट के ज़रिए ही आपसे संपर्क कर सकेंगे। आपका नंबर सार्वजनिक नहीं होगा।</p>
+            </label>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="w-full bg-olxBlue hover:bg-[#00383e] text-white font-bold py-3 rounded-xl transition-all shadow-md active:scale-98">
+          विज्ञापन पोस्ट करें (Post Now)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= INTER-PERSONAL LIVE CHAT MODAL ================= -->
+  <div id="chatModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-2 sm:p-4 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl max-w-lg w-full h-[600px] max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-fadeIn">
+      
+      <!-- Chat Header -->
+      <div class="bg-olxBlue text-white p-3 sm:p-4 flex items-center justify-between shadow-md">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <div id="chatUserAvatar" class="w-10 h-10 rounded-full bg-olxTeal text-white font-bold flex items-center justify-center text-sm shadow">
+              U
+            </div>
+            <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-olxBlue rounded-full"></span>
+          </div>
+          <div>
+            <h3 id="chatSellerTitle" class="font-bold text-sm sm:text-base leading-tight"></h3>
+            <p class="text-[11px] text-teal-200 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full inline-block animate-pulse"></span>
+              ऑनलाइन • Reseller Deal Room
+            </p>
+          </div>
+        </div>
+
+        <button onclick="closeChatModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Item Snippet in Chat -->
+      <div id="chatProductBar" class="bg-gray-100 border-b border-gray-200 px-3 py-2 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2 truncate">
+          <img id="chatItemImg" src="" alt="Thumbnail" class="w-9 h-9 rounded object-cover border">
+          <div class="truncate">
+            <div id="chatItemTitle" class="font-bold text-gray-800 truncate"></div>
+            <div id="chatItemPrice" class="text-olxTeal font-extrabold"></div>
+          </div>
+        </div>
+        <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded ml-2 whitespace-nowrap">Deal Pending</span>
+      </div>
+
+      <!-- Quick Action deal chips -->
+      <div class="bg-white px-3 py-1.5 border-b border-gray-100 flex items-center gap-1.5 overflow-x-auto text-[11px] whitespace-nowrap">
+        <button onclick="sendQuickMessage('Is this still available?')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full border border-gray-300">क्या यह उपलब्ध है?</button>
+        <button onclick="sendQuickMessage('What is your last and final price?')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full border border-gray-300">Final Price क्या होगी?</button>
+        <button onclick="sendQuickMessage('Can you ship to my city in UP?')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full border border-gray-300">UP में डिलीवरी मिल जाएगी?</button>
+        <button onclick="sendQuickMessage('Deal Done! Please share meetup address.')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-2.5 py-1 rounded-full border border-amber-300 font-semibold">Deal Done!</button>
+      </div>
+
+      <!-- Messages Flow Area -->
+      <div id="chatMessagesFlow" class="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 bg-[#e5ddd5]/30">
+        <!-- Message balloons rendered here -->
+      </div>
+
+      <!-- Input Bar -->
+    <div class="p-2 sm:p-3 bg-white border-t border-gray-200 flex items-center gap-2">
+      <input 
+        type="text" 
+        id="chatTextInput" 
+        onkeypress="if(event.key === 'Enter') handleSendMessage()"
+        placeholder="Type message or offer your price (₹)..." 
+        class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-xs sm:text-sm outline-none focus:border-olxTeal focus:ring-1 focus:ring-olxTeal bg-gray-50"
+      />
+      <button onclick="handleSendMessage()" class="bg-olxTeal hover:bg-[#008f8a] text-white w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors shadow active:scale-95">
+        <i class="fa-solid fa-paper-plane text-xs sm:text-sm"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= JAVASCRIPT LOGIC WITH FIREBASE INTEGRATION ================= -->
+<script>
+  // Initial UP Reseller Seed Products (Used when offline or initializing)
+  const DEFAULT_PRODUCTS = [
+    {
+      id: "prod-1",
+      title: "Wholesale T-Shirts Lot (50 Pcs Mixed Sizes)",
+      category: "Wholesale / Resale Lots",
+      price: 4999,
+      location: "Kanpur",
+      date: "Today",
+      sellerName: "Gupta Garments",
+      sellerPhone: "9876543210",
+      hideContact: false,
+      timestamp: Date.now() - 3600000,
+      image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80",
+      description: "Fresh premium 180 GSM cotton round neck t-shirts lot. 50 pieces mixed pack with sizes M, L, XL. Ideal for boutique owners & UP resellers. Delivery available across UP."
+    },
+    {
+      id: "prod-2",
+      title: "iPhone 13 - 128 GB Blue (92% Battery Health)",
+      category: "Mobiles & Electronics",
+      price: 36500,
+      location: "Lucknow",
+      date: "Yesterday",
+      sellerName: "Aman Tripathi",
+      sellerPhone: "9988776655",
+      hideContact: true,
+      timestamp: Date.now() - 7200000,
+      image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=600&q=80",
+      description: "Phone is in mint condition with bill, box, and original charging cable. Always used with temper glass and cover. No dents or scratches. Reselling for upgrade."
+    },
+    {
+      id: "prod-3",
+      title: "Sheesham Wood Ergonomic Study Table & Chair",
+      category: "Furniture",
+      price: 3200,
+      location: "Jhansi",
+      date: "2 days ago",
+      sellerName: "Bundelkhand Traders",
+      sellerPhone: "9838112233",
+      hideContact: false,
+      timestamp: Date.now() - 14400000,
+      image: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=600&q=80",
+      description: "Solid Sheesham wood study table with 2 drawers and comfortable back support study chair. Perfect for students preparing for exams in Jhansi."
+    },
+    {
+      id: "prod-4",
+      title: "Hero Splendor Plus (2021 Model) - Single Hand",
+      category: "Vehicles",
+      price: 42000,
+      location: "Agra",
+      date: "Today",
+      sellerName: "Kishore Sharma",
+      sellerPhone: "9450001122",
+      hideContact: true,
+      timestamp: Date.now() - 28800000,
+      image: "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=600&q=80",
+      description: "Single hand driven Hero Splendor i3s. Mileage around 65 km/l. All papers clear (RC, Insurance up to 2026). Genuine buyers only, please deal on chat first."
+    },
+    {
+      id: "prod-5",
+      title: "UPSC & UP-PCS Complete Foundation Book Set (2024)",
+      category: "Books & Education",
+      price: 1800,
+      location: "Prayagraj",
+      date: "3 days ago",
+      sellerName: "Adarsh Singh",
+      sellerPhone: "9123456780",
+      hideContact: false,
+      timestamp: Date.now() - 86400000,
+      image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80",
+      description: "Set of standard books including Laxmikanth Polity, Spectrum Modern History, GC Leong Geography, and Ghatna Chakra UP special. In clean, unhighlighted condition."
+    },
+    {
+      id: "prod-6",
+      title: "Voltas 1.5 Ton 3 Star Inverter Split AC (Under Warranty)",
+      category: "Home Appliances",
+      price: 19500,
+      location: "Varanasi",
+      date: "1 day ago",
+      sellerName: "Kashi Resellers",
+      sellerPhone: "9792003344",
+      hideContact: true,
+      timestamp: Date.now() - 172800000,
+      image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=600&q=80",
+      description: "1.5 Ton copper coil inverter AC. Only 1 season used, excellent cooling. Free outdoor stand and 3m copper pipes included. Shifting to another flat."
+    }
+  ];
+
+  // App State Variables
+  let products = [];
+  let selectedCategory = 'All';
+  let currentViewingProduct = null;
+  let currentChatProduct = null;
+  let chatHistories = {}; // Map productId -> array of messages
+  let uploadedImageBase64 = null;
+  let uploadedImageRawFile = null;
+  let activeChatUnsubscribe = null;
+
+  // Initial chat seed for testing
+  chatHistories['prod-2'] = [
+    { sender: 'seller', text: 'Namaste! Main Lucknow se hoon. Kya aap iPhone lena chahte hain?', time: '11:15 AM' },
+    { sender: 'user', text: 'Haan bhai, battery health sach me 92% hai?', time: '11:18 AM' },
+    { sender: 'seller', text: 'Ji bilkul original battery hai. Aap kab aakar dekhna chahenge?', time: '11:20 AM' }
+  ];
+
+  // Initialize App with Firebase detection
+  function initApp() {
+    loadLocalFallbackProducts();
+
+    // Check Firebase Auth Ready event from module
+    window.addEventListener('firebase-auth-ready', (e) => {
+      const tag = document.getElementById('backendStatusTag');
+      const text = document.getElementById('backendStatusText');
+      if (tag && text) {
+        tag.classList.remove('hidden');
+        text.textContent = 'Firebase Cloud Synced';
+      }
+      showToast("Connected to Firebase Backend!");
+      startFirebaseRealtimeListeners();
+    });
+
+    // If Firebase ready immediately
+    if (window.ResellFirebase && window.ResellFirebase.isFirebaseReady()) {
+      startFirebaseRealtimeListeners();
+    }
+  }
+
+  function loadLocalFallbackProducts() {
+    const stored = localStorage.getItem('up_reseller_products');
+    if (stored) {
+      try {
+        products = JSON.parse(stored);
+      } catch (e) {
+        products = [...DEFAULT_PRODUCTS];
+      }
+    } else {
+      products = [...DEFAULT_PRODUCTS];
+      saveLocalProducts();
+    }
+    renderProducts();
+  }
+
+  function saveLocalProducts() {
+    localStorage.setItem('up_reseller_products', JSON.stringify(products));
+  }
+
+  function startFirebaseRealtimeListeners() {
+    if (!window.ResellFirebase) return;
+
+    // Listen to live ads collection
+    window.ResellFirebase.subscribeAds((cloudAds) => {
+      if (cloudAds && cloudAds.length > 0) {
+        // Merge cloud ads with default seeds if needed
+        products = cloudAds;
+      } else {
+        products = [...DEFAULT_PRODUCTS];
+      }
+      saveLocalProducts();
+      renderProducts();
+    }, (err) => {
+      console.warn("Falling back to local cache:", err);
+      loadLocalFallbackProducts();
+    });
+  }
+
+  // Render Product Cards Grid
+  function renderProducts() {
+    const grid = document.getElementById('productGrid');
+    const emptyState = document.getElementById('emptyState');
+    const countLabel = document.getElementById('listingCount');
+
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+    const locationTerm = document.getElementById('locationFilter').value;
+
+    const filtered = products.filter(p => {
+      const matchesCategory = (selectedCategory === 'All' || p.category === selectedCategory);
+      const matchesLocation = (locationTerm === 'All' || (p.location && p.location.toLowerCase() === locationTerm.toLowerCase()));
+      const matchesSearch = (p.title.toLowerCase().includes(searchTerm) || (p.description && p.description.toLowerCase().includes(searchTerm)) || p.category.toLowerCase().includes(searchTerm));
+      return matchesCategory && matchesLocation && matchesSearch;
+    });
+
+    countLabel.textContent = `Showing ${filtered.length} listings in UP`;
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '';
+      emptyState.classList.remove('hidden');
       return;
     }
-    snap.forEach(doc => {
-      const d = doc.data();
-      adsGrid.innerHTML += `
-        <div class="bg-white rounded-xl shadow overflow-hidden">
-          <img src="${d.imageUrl || 'https://via.placeholder.com/300'}" class="h-40 w-full object-cover">
-          <div class="p-3">
-            <p class="font-bold">₹${d.price}</p>
-            <p class="text-sm truncate">${d.title}</p>
-            <p class="text-xs text-gray-500">${d.location}</p>
-          </div>
-        </div>`;
-    });
-  } catch(e) {
-    adsGrid.innerHTML = "Error: " + e.message;
-  }
-}
 
-document.getElementById('postAdBtn').onclick = async () => {
-  const btn = document.getElementById('postAdBtn');
-  btn.innerText = "Posting...";
-  btn.disabled = true;
-  try {
-    await addDoc(collection(db, "apnaBazaar_ads"), {
-      title: document.getElementById('title').value,
-      price: document.getElementById('price').value,
-      category: document.getElementById('category').value,
-      location: document.getElementById('location').value,
-      desc: document.getElementById('desc').value,
-      imageUrl: document.getElementById('imageUrl').value,
-      createdAt: Date.now()
-    });
-    postModal.classList.add('hidden');
-    alert("Ho gaya Post!");
-    loadAds();
-  } catch(e) {
-    alert("Error: " + e.message);
+    emptyState.classList.add('hidden');
+    grid.innerHTML = filtered.map(p => `
+      <div onclick="openProductModal('${p.id}')" class="bg-white rounded-xl border border-gray-200 hover:border-olxTeal hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden group">
+        <!-- Thumbnail Image -->
+        <div class="relative bg-gray-100 h-44 overflow-hidden flex items-center justify-center">
+          <img src="${p.image}" alt="${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/400x300/e2e8f0/0f172a?text=ResellUP+Item'">
+          <span class="absolute top-2.5 left-2.5 bg-olxBlue/80 backdrop-blur-xs text-white text-[11px] font-bold px-2 py-0.5 rounded shadow">
+            <i class="fa-solid fa-tag text-olxYellow mr-1 text-[10px]"></i>${p.category}
+          </span>
+          <button onclick="event.stopPropagation(); toggleFavorite(this)" class="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-gray-400 hover:text-red-500 flex items-center justify-center shadow transition-colors">
+            <i class="fa-regular fa-heart"></i>
+          </button>
+        </div>
+
+        <!-- Product Meta -->
+        <div class="p-3.5 flex-1 flex flex-col justify-between">
+          <div>
+            <div class="flex items-baseline justify-between mb-1">
+              <span class="text-xl font-black text-olxBlue">₹ ${Number(p.price).toLocaleString('en-IN')}</span>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-800 line-clamp-2 leading-snug mb-2 group-hover:text-olxTeal transition-colors">${p.title}</h3>
+          </div>
+
+          <!-- Location & Date -->
+          <div class="border-t border-gray-100 pt-2 flex items-center justify-between text-[11px] text-gray-500">
+            <span class="truncate flex items-center">
+              <i class="fa-solid fa-location-dot text-red-500 mr-1"></i>
+              <span class="font-medium text-gray-700">${p.location || 'Uttar Pradesh'}, UP</span>
+            </span>
+            <span class="text-gray-400 uppercase tracking-tighter">${p.date || 'Active'}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
   }
-  btn.innerText = "Post Ad";
-  btn.disabled = false;
-};
-loadAds();
+
+  // Filter Handlers
+  function filterProducts() {
+    renderProducts();
+  }
+
+  function syncLocation(val) {
+    document.getElementById('locationFilter').value = val;
+    filterProducts();
+  }
+
+  function selectCategory(cat) {
+    selectedCategory = cat;
+    document.querySelectorAll('.cat-pill').forEach(btn => {
+      if (btn.dataset.cat === cat) {
+        btn.className = "cat-pill font-bold text-olxBlue bg-gray-100 px-3 py-1 rounded-md shadow-xs border-b-2 border-olxTeal";
+      } else {
+        btn.className = "cat-pill text-gray-700 hover:text-olxTeal font-medium px-2 py-1";
+      }
+    });
+    renderProducts();
+  }
+
+  function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('locationFilter').value = 'All';
+    document.getElementById('mobileLocationFilter').value = 'All';
+    selectCategory('All');
+  }
+
+  // ================= MODAL LOGIC =================
+  function openProductModal(productId) {
+    const prod = products.find(p => p.id === productId);
+    if (!prod) return;
+    currentViewingProduct = prod;
+
+    document.getElementById('modalProductImg').src = prod.image;
+    document.getElementById('modalCategoryTag').textContent = prod.category;
+    document.getElementById('modalProductPrice').textContent = `₹ ${Number(prod.price).toLocaleString('en-IN')}`;
+    document.getElementById('modalProductTitle').textContent = prod.title;
+    document.getElementById('modalProductLocation').textContent = `${prod.location || 'All'}, Uttar Pradesh`;
+    document.getElementById('modalProductDate').textContent = `Posted: ${prod.date || 'Active'}`;
+    document.getElementById('modalProductDesc').textContent = prod.description;
+    document.getElementById('modalSellerName').textContent = prod.sellerName || 'Verified Reseller';
+    document.getElementById('modalSellerInitial').textContent = prod.sellerName ? prod.sellerName.charAt(0) : 'U';
+
+    // Privacy logic for Contact details
+    const contactBox = document.getElementById('contactDetailsContainer');
+    if (prod.hideContact) {
+      contactBox.innerHTML = `
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 flex items-center justify-between">
+          <div class="flex items-center text-xs text-amber-900">
+            <i class="fa-solid fa-lock text-amber-600 mr-2 text-sm"></i>
+            <span><strong>Phone Hidden:</strong> विक्रेता ने नंबर गोपनीय रखा है। बात करने के लिए चैट का प्रयोग करें।</span>
+          </div>
+        </div>
+      `;
+    } else {
+      const masked = prod.sellerPhone ? prod.sellerPhone.substring(0, 3) + '••••••' + prod.sellerPhone.substring(8) : '98••••••10';
+      contactBox.innerHTML = `
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 flex items-center justify-between">
+          <div class="flex items-center text-xs text-emerald-900">
+            <i class="fa-solid fa-phone text-emerald-600 mr-2"></i>
+            <span id="revealedPhone" class="font-bold tracking-wide">${masked}</span>
+          </div>
+          <button onclick="revealPhoneNumber('${prod.sellerPhone || '9876543210'}')" class="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded font-semibold hover:bg-emerald-700 transition">
+            Show Number
+          </button>
+        </div>
+      `;
+    }
+
+    // Configure Chat Button
+    const chatBtn = document.getElementById('modalChatBtn');
+    chatBtn.onclick = function() {
+      closeProductModal();
+      openChatForProduct(prod);
+    };
+
+    document.getElementById('productModal').classList.remove('hidden');
+  }
+
+  function revealPhoneNumber(fullNum) {
+    const span = document.getElementById('revealedPhone');
+    if (span) {
+      span.textContent = `+91 ${fullNum}`;
+      showToast("विक्रेता का फोन नंबर प्रदर्शित किया गया!");
+    }
+  }
+
+  function closeProductModal() {
+    document.getElementById('productModal').classList.add('hidden');
+  }
+
+  // ================= POST AD (FIREBASE STORAGE / FIRESTORE) =================
+  function openPostAdModal() {
+    document.getElementById('postAdModal').classList.remove('hidden');
+  }
+
+  function closePostAdModal() {
+    document.getElementById('postAdModal').classList.add('hidden');
+  }
+
+  function handleImagePreview(event) {
+    const file = event.target.files[0];
+    if (file) {
+      uploadedImageRawFile = file;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        uploadedImageBase64 = e.target.result;
+        document.getElementById('previewImgTag').src = uploadedImageBase64;
+        document.getElementById('imagePreviewContainer').classList.remove('hidden');
+        document.getElementById('imageUploadPlaceholder').classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  async function handlePostAd(e) {
+    e.preventDefault();
+
+    const title = document.getElementById('adTitle').value.trim();
+    const category = document.getElementById('adCategory').value;
+    const location = document.getElementById('adLocation').value;
+    const price = document.getElementById('adPrice').value;
+    const description = document.getElementById('adDescription').value.trim();
+    const sellerName = document.getElementById('sellerName').value.trim();
+    const sellerPhone = document.getElementById('sellerPhone').value.trim();
+    const hideContact = document.getElementById('hideContactToggle').checked;
+
+    const fallbackImg = uploadedImageBase64 || "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&w=600&q=80";
+
+    const newAdPayload = {
+      title,
+      category,
+      location,
+      price: Number(price),
+      description,
+      sellerName,
+      sellerPhone,
+      hideContact,
+      date: "Just Now",
+      image: fallbackImg
+    };
+
+    showToast("विज्ञापन अपलोड हो रहा है...");
+
+    // Post via Firebase if ready, or save locally
+    if (window.ResellFirebase && window.ResellFirebase.isFirebaseReady()) {
+      const saved = await window.ResellFirebase.postAd(newAdPayload, uploadedImageRawFile || uploadedImageBase64);
+      if (saved && saved.id) {
+        products.unshift(saved);
+      } else {
+        newAdPayload.id = "prod-" + Date.now();
+        products.unshift(newAdPayload);
+      }
+    } else {
+      newAdPayload.id = "prod-" + Date.now();
+      products.unshift(newAdPayload);
+    }
+
+    saveLocalProducts();
+    renderProducts();
+
+    // Reset Form
+    document.getElementById('postAdForm').reset();
+    document.getElementById('imagePreviewContainer').classList.add('hidden');
+    document.getElementById('imageUploadPlaceholder').classList.remove('hidden');
+    uploadedImageBase64 = null;
+    uploadedImageRawFile = null;
+    closePostAdModal();
+
+    showToast("आपका विज्ञापन सफलतापूर्वक लाइव हो गया!");
+  }
+
+  // ================= REALTIME CHAT (FIRESTORE ON-SNAPSHOT INTEGRATED) =================
+  function openChatForProduct(product) {
+    currentChatProduct = product;
+
+    // Header info
+    document.getElementById('chatSellerTitle').textContent = product.sellerName || 'Reseller';
+    document.getElementById('chatUserAvatar').textContent = product.sellerName ? product.sellerName.charAt(0) : 'S';
+    document.getElementById('chatItemImg').src = product.image;
+    document.getElementById('chatItemTitle').textContent = product.title;
+    document.getElementById('chatItemPrice').textContent = `₹ ${Number(product.price).toLocaleString('en-IN')}`;
+
+    // Clean any prior unsubscribe
+    if (activeChatUnsubscribe) {
+      activeChatUnsubscribe();
+      activeChatUnsubscribe = null;
+    }
+
+    // Connect to Firestore Realtime Deal Room
+    if (window.ResellFirebase && window.ResellFirebase.isFirebaseReady()) {
+      activeChatUnsubscribe = window.ResellFirebase.subscribeChat(product.id, (cloudMessages) => {
+        if (cloudMessages && cloudMessages.length > 0) {
+          chatHistories[product.id] = cloudMessages.map(m => ({
+            sender: m.senderUid === window.ResellFirebase.getUser()?.uid ? 'user' : 'seller',
+            text: m.text,
+            time: formatTime(m.timestamp)
+          }));
+        } else {
+          ensureDefaultChatHistory(product);
+        }
+        renderChatMessages();
+      }, () => {
+        ensureDefaultChatHistory(product);
+        renderChatMessages();
+      });
+    } else {
+      ensureDefaultChatHistory(product);
+      renderChatMessages();
+    }
+
+    document.getElementById('chatModal').classList.remove('hidden');
+  }
+
+  function ensureDefaultChatHistory(product) {
+    if (!chatHistories[product.id]) {
+      chatHistories[product.id] = [
+        {
+          sender: 'seller',
+          text: `Namaste! I am ${product.sellerName || 'Seller'} from ${product.location || 'UP'}. Aap iss "${product.title}" ke liye direct mujhse baat kar sakte hain.`,
+          time: formatTime()
+        }
+      ];
+    }
+  }
+
+  function renderChatMessages() {
+    const container = document.getElementById('chatMessagesFlow');
+    if (!currentChatProduct || !chatHistories[currentChatProduct.id]) return;
+
+    const messages = chatHistories[currentChatProduct.id];
+    container.innerHTML = messages.map(m => {
+      const isUser = m.sender === 'user';
+      return `
+        <div class="flex flex-col ${isUser ? 'items-end' : 'items-start'}">
+          <div class="max-w-[80%] rounded-2xl px-3.5 py-2 text-xs sm:text-sm shadow-sm ${
+            isUser 
+              ? 'bg-olxTeal text-white rounded-tr-none' 
+              : 'bg-white text-gray-800 rounded-tl-none border border-gray-200'
+          }">
+            <p class="leading-relaxed">${m.text}</p>
+            <div class="flex items-center justify-end gap-1 mt-1 text-[10px] ${isUser ? 'text-teal-100' : 'text-gray-400'}">
+              <span>${m.time}</span>
+              ${isUser ? '<i class="fa-solid fa-check-double text-[9px] text-yellow-300"></i>' : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    container.scrollTop = container.scrollHeight;
+  }
+
+  async function handleSendMessage() {
+    const input = document.getElementById('chatTextInput');
+    const text = input.value.trim();
+    if (!text || !currentChatProduct) return;
+
+    input.value = '';
+    await appendUserMessage(text);
+  }
+
+  async function sendQuickMessage(text) {
+    await appendUserMessage(text);
+  }
+
+  async function appendUserMessage(text) {
+    const msg = {
+      sender: 'user',
+      text: text,
+      time: formatTime()
+    };
+
+    if (!chatHistories[currentChatProduct.id]) {
+      chatHistories[currentChatProduct.id] = [];
+    }
+    chatHistories[currentChatProduct.id].push(msg);
+    renderChatMessages();
+
+    // Send to Firebase if connected
+    if (window.ResellFirebase && window.ResellFirebase.isFirebaseReady()) {
+      await window.ResellFirebase.sendChatMessage(currentChatProduct.id, {
+        text: text,
+        sender: 'user'
+      });
+    }
+
+    // Trigger realistic bargaining seller reply
+    triggerSellerReply(text);
+  }
+
+  function triggerSellerReply(userMsg) {
+    const prod = currentChatProduct;
+    setTimeout(async () => {
+      let reply = "";
+      const lower = userMsg.toLowerCase();
+
+      if (lower.includes('available') || lower.includes('उपलब्ध')) {
+        reply = `Haan bhai, ${prod.title} abhi bilkul available hai! Aap lene ke liye kab comfortable hain?`;
+      } else if (lower.includes('final') || lower.includes('last') || lower.includes('price')) {
+        const discount = Math.round(prod.price * 0.92);
+        reply = `Main aapko ₹${discount.toLocaleString('en-IN')} tak de sakta hoon, isse kam nahi ho payega bhai.`;
+      } else if (lower.includes('ship') || lower.includes('delivery') || lower.includes('up')) {
+        reply = `Haan, poore Uttar Pradesh me parcel ya courier se bheja jaa sakta hai. Aap apna district batayein.`;
+      } else if (lower.includes('deal') || lower.includes('done') || lower.includes('address')) {
+        reply = `Great! Deal pakki karte hain. Main ${prod.location || 'UP'} me meetup kar sakta hoon. Call ya chat par exact spot decide kar lete hain!`;
+      } else {
+        reply = `Theek hai dost, aapki offer samajh gaya. Main ${prod.location || 'UP'} me ready hoon. Batayein kab final karein?`;
+      }
+
+      if (currentChatProduct && chatHistories[currentChatProduct.id]) {
+        const sellerMsg = {
+          sender: 'seller',
+          text: reply,
+          time: formatTime()
+        };
+        chatHistories[currentChatProduct.id].push(sellerMsg);
+        renderChatMessages();
+
+        // Also push seller reply to Firestore if online
+        if (window.ResellFirebase && window.ResellFirebase.isFirebaseReady()) {
+          await window.ResellFirebase.sendChatMessage(prod.id, {
+            text: reply,
+            sender: 'seller'
+          });
+        }
+      }
+    }, 1100);
+  }
+
+  function closeChatModal() {
+    if (activeChatUnsubscribe) {
+      activeChatUnsubscribe();
+      activeChatUnsubscribe = null;
+    }
+    document.getElementById('chatModal').classList.add('hidden');
+  }
+
+  // ================= INBOX / CHAT LIST MODAL =================
+  function openChatListModal() {
+    const listContainer = document.getElementById('activeConversationsList');
+    const activeIds = Object.keys(chatHistories);
+
+    if (activeIds.length === 0) {
+      listContainer.innerHTML = `<p class="text-xs text-gray-500 py-6 text-center">अभी तक कोई बातचीत शुरू नहीं हुई है। किसी भी विज्ञापन पर 'Chat with Seller' दबाएं!</p>`;
+    } else {
+      listContainer.innerHTML = activeIds.map(pId => {
+        const prod = products.find(p => p.id === pId) || {
+          title: "Archived Product",
+          sellerName: "UP Seller",
+          price: 0,
+          image: "https://placehold.co/100"
+        };
+        const messages = chatHistories[pId];
+        const lastMsg = messages[messages.length - 1];
+
+        return `
+          <div onclick="openChatFromList('${pId}')" class="p-3 bg-gray-50 hover:bg-gray-100 rounded-xl cursor-pointer flex items-center justify-between border border-gray-200 transition">
+            <div class="flex items-center gap-3 truncate">
+              <img src="${prod.image}" class="w-11 h-11 rounded-lg object-cover border">
+              <div class="truncate">
+                <h4 class="font-bold text-xs text-olxBlue truncate">${prod.title}</h4>
+                <p class="text-xs text-gray-500 truncate"><span class="font-semibold text-gray-700">${prod.sellerName}:</span> ${lastMsg.text}</p>
+              </div>
+            </div>
+            <span class="text-[10px] text-gray-400 whitespace-nowrap ml-2">${lastMsg.time}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('chatListModal').classList.remove('hidden');
+  }
+
+  function openChatFromList(prodId) {
+    closeChatListModal();
+    const prod = products.find(p => p.id === prodId);
+    if (prod) {
+      openChatForProduct(prod);
+    }
+  }
+
+  function closeChatListModal() {
+    document.getElementById('chatListModal').classList.add('hidden');
+  }
+
+  // Utilities
+  function toggleFavorite(btn) {
+    const icon = btn.querySelector('i');
+    if (icon.classList.contains('fa-regular')) {
+      icon.classList.remove('fa-regular');
+      icon.classList.add('fa-solid', 'text-red-500');
+      showToast("Saved to your favorites!");
+    } else {
+      icon.classList.remove('fa-solid', 'text-red-500');
+      icon.classList.add('fa-regular');
+    }
+  }
+
+  function formatTime(timestamp) {
+    const d = timestamp ? new Date(timestamp) : new Date();
+    let hours = d.getHours();
+    let minutes = d.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    return hours + ':' + minutes + ' ' + ampm;
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    const text = document.getElementById('toastMessage');
+    text.textContent = msg;
+    toast.classList.remove('translate-y-20', 'opacity-0');
+    setTimeout(() => {
+      toast.classList.add('translate-y-20', 'opacity-0');
+    }, 2800);
+  }
+
+  // Initialize on window load
+  window.onload = function() {
+    initApp();
+  };
 </script>
+</body>
+</html>
